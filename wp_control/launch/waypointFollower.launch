@@ -1,0 +1,16 @@
+<launch>
+  <!-- <arg name="cmd_topic" default="/waypointFollower/cmd_vel"/> -->
+  <arg name="speed" default="1"/>
+  <arg name="path" default="lot50_oval"/>
+  <arg name="skipto" default="0"/>
+  <arg name="wptfile" default="$(find wp_control)/paths/$(arg path)/waypoints_$(arg speed)"/> 
+  <node pkg="wp_control" type="gpsWaypoint" name="waypointFollower" output="screen">
+    <param name="WaypointFile" value="$(arg wptfile)"/>
+    <param name="WaypointRadius" value="5"/>
+    <param name="HeadingP" value="0.2"/>
+    <param name="Speed" value="$(arg speed)"/>
+    <param name="Skipto" value="$(arg skipto)"/>
+
+    <!-- <remap from="cmd_vel" to="$(arg cmd_topic)"/> -->
+  </node>
+</launch>

@@ -1,0 +1,8 @@
+<launch>
+
+  <node pkg="wp_control" type="GenerateWaypoints" name="WaypointGen" output="screen">
+    <param name="WaypointDistance" value="1" />
+    <param name="WaypointFile" value="$(find wp_control)/paths/waypoints" />
+  </node>
+
+</launch>

@@ -1,0 +1,3 @@
+#!/bin/bash
+source ~/catkin_ws/devel/setup.bash
+roslaunch dbw_mkz_joystick_demo joystick_demo.launch sys:=true

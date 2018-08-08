@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+import csv
+import math as m
+
+with open('waypoints_3','rb') as f:
+    reader = csv.reader(f,delimiter=',')
+    spot = 0;
+    spd = {}
+    lat = {}
+    lng = {}
+    for row in reader:
+        lat[spot] = float(row[0])
+        lng[spot] = float(row[1])
+        spd[spot] = float(row[2])
+        spot += 1
+f.close
+dlat = 0.000000000
+dlong = 0.000000000
+with open('waypoints_alt', 'wb') as f:
+    writer = csv.writer(f, delimiter=',')
+    for j in range(0,spot):
+        writer.writerow([lat[j]+dlat,lng[j]+dlong,spd[j]])
+f.close

@@ -1,0 +1,6 @@
+#!/bin/bash
+#cd ~/catkin_ws/src/ethzasl_xsens_driver/nodes
+#./mtnode.py -c pl400fe,pa400fe,oq400fe
+rosrun xsens_driver mtdevice.py -m 3 -f 100
+sleep 1
+rosrun xsens_driver mtnode.py
