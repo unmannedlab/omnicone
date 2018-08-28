@@ -1,0 +1,3 @@
+# Calls out to get_roboteq_id to find out which controller this is, and then
+# appends that ID to the symlink.
+KERNEL=="ttyACM?" ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", SYMLINK+="roboteq"

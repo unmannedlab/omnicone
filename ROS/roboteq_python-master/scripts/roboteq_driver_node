@@ -1,0 +1,314 @@
+#!/usr/bin/env python
+import sys
+import re
+import io
+import threading
+import functools
+import math
+import serial
+import rospy
+from std_msgs.msg import Float32, Int32
+
+def to_rpm(x):
+    """Convert rad / sec to RPM"""
+    return x * 60.0 / (2.0 * math.pi)
+
+def to_rpm_per_sec(x):
+    """"Convert rad / sec**2 to RPM / s"""
+    return x * 60.0 / (2.0 * math.pi)
+
+def from_rpm(x):
+    """Convert RPM to rad / sec"""
+    return x / 60.0 * 2.0 * math.pi
+
+class Motor:
+    """Holds all parameters for one motor."""
+    def __init__(self, channel, param_dict):
+        self.channel = channel
+
+        # The name is used as the root of the topics for the motor, e.g.
+        # "<motor_name>/cmd". If no name is provided, just use the channel
+        # number.
+        self.name = param_dict.get('name', str(self.channel))
+
+        rospy.loginfo('Setting up motor: {}'.format(self.name))
+
+        self.motor_reversed = param_dict['motor_reversed']
+        self.max_speed = param_dict['max_speed']
+        self.max_acceleration = param_dict['max_acceleration']
+        self.max_deceleration = param_dict['max_deceleration']
+        self.max_duty_cycle = param_dict['max_duty_cycle']
+        self.max_current = param_dict['max_current']
+        self.k_p = param_dict['k_p']
+        self.k_i = param_dict['k_i']
+        self.k_d = param_dict['k_d']
+
+        self.encoder_pulses_per_revolution = param_dict['encoder_pulses_per_revolution']
+
+        self.velocity = None
+
+        self.command = 0.0
+
+        # We store the time of the last command so that we can stop the motors
+        # if nobody is sending new commands.
+        self.last_command_time = rospy.Time(0)
+
+        self.absolute_encoder_count = None
+
+        self.command_subscriber = rospy.Subscriber(
+            '{}/command'.format(self.name),
+            Float32,
+            functools.partial(self.set_command))
+
+        self.absolute_encoder_count_publisher = rospy.Publisher(
+            '{}/absolute_encoder_count'.format(self.name),
+            Int32,
+            queue_size=100)
+
+        self.velocity_publisher = rospy.Publisher(
+            '{}/velocity'.format(self.name),
+            Float32,
+            queue_size=100)
+
+    def set_command(self, command_msg):
+        """
+        Set the command for the motor from a std_msgs/Float32
+        """
+        self.command = command_msg.data
+        self.last_command_time = rospy.Time.now()
+
+    def publish_state(self):
+        if self.absolute_encoder_count is not None:
+            self.absolute_encoder_count_publisher.publish(
+                Int32(self.absolute_encoder_count))
+
+        if self.velocity is not None:
+            self.velocity_publisher.publish(Float32(self.velocity))
+
+class Roboteq:
+    def __init__(self, port):
+        port = rospy.get_param('~port')
+        self._command_timeout = rospy.get_param('~command_timeout', 0.5)
+
+        self._ser = serial.Serial(
+            port=port,
+            baudrate=115200,
+            bytesize=8,
+            parity='N',
+            stopbits=1,
+            xonxoff=False,
+            timeout=1,
+            )
+
+        self._sio = io.TextIOWrapper(
+            io.BufferedRWPair(
+                self._ser,
+                self._ser,
+                1, # Buffer size of 1
+                ),
+                encoding='ascii',
+                newline='\r',
+                line_buffering=True
+            )
+
+        self._serial_lock = threading.RLock()
+
+        # Create battery voltage publisher
+        self._supply_voltage_pub = rospy.Publisher('supply_voltage', Float32, queue_size=10)
+
+        # Load motor parameters
+        self._motors = [Motor(motor_i + 1, param_dict)
+            for motor_i, param_dict in enumerate(rospy.get_param('~motors'))]
+
+        self.configure()
+
+    def configure(self):
+        # Turn off serial echo
+        self.execute_configuration_command('echof 1')
+
+        # The command to turn off echo gets echoed; clear that out
+        self._sio.readline()
+
+        # Make sure there isn't any microbasic script running
+        self.execute_runtime_command('r 0')
+
+        # Over and under voltage limits for motor power stage
+        # TODO: Set values from parameter
+        self.execute_configuration_command('uvl {}'.format(int(round(3.0*10))))
+        self.execute_configuration_command('ovl {}'.format(int(round(200.0*10))))
+
+        # Turn off mixing
+        self.execute_configuration_command('mxmd 0')
+
+        for motor in self._motors:
+            self.execute_configuration_command(
+                'icap {} 100'.format(motor.channel))
+
+            # Turn off closed loop error detection
+            self.execute_configuration_command(
+                'clerd {} 0'.format(motor.channel))
+
+            # Turn off stall detection
+            self.execute_configuration_command(
+                'blstd {} 0'.format(motor.channel))
+
+            # Absolute max current for each motor
+            self.execute_configuration_command(
+                'alim {} {}'.format(motor.channel, int(round(10.0 * motor.max_current))))
+
+            # Max current for each motor before triggering safety action
+            self.execute_configuration_command(
+                'atrig {} {}'.format(motor.channel, int(round(10.0 * motor.max_current))))
+
+            # Time above trigger current before triggering safety action (ms)
+            self.execute_configuration_command(
+                'atgd {} {}'.format(motor.channel, 100))
+
+            # Trigger action. 0 means no action.
+            self.execute_configuration_command(
+                'atga {} {}'.format(motor.channel, 16+32+48+0))
+
+            # Acceleration limits in RPM change per 0.1 seconds
+            self.execute_configuration_command(
+                'mac {} {}'.format(
+                    motor.channel,
+                    to_rpm_per_sec(motor.max_acceleration)))
+            self.execute_configuration_command(
+                'mdec {} {}'.format(
+                    motor.channel, to_rpm_per_sec(motor.max_deceleration)))
+
+            # Operating mode 1 is closed loop speed control
+            self.execute_configuration_command(
+                'mmod {} 1'.format(motor.channel))
+
+            # Max speed in RPM. Commands are relative to this maximum
+            self.execute_configuration_command(
+                'mxrpm {} {}'.format(motor.channel, to_rpm(motor.max_speed)))
+
+            # Use encoders for speed feedback on each motor
+            self.execute_configuration_command(
+                'emod {} {}'.format(motor.channel, int(16*motor.channel + 2)))
+
+            # Set encoder pulses per rotation
+            self.execute_configuration_command(
+                'eppr {} {}'.format(
+                    motor.channel, motor.encoder_pulses_per_revolution))
+
+            self.execute_configuration_command(
+                'kp {} {}'.format(motor.channel, int(10.0 * motor.k_p)))
+            self.execute_configuration_command(
+                'ki {} {}'.format(motor.channel, int(10.0 * motor.k_i)))
+            self.execute_configuration_command(
+                'kd {} {}'.format(motor.channel, int(10.0 * motor.k_d)))
+
+        # Configure digital inputs (e.g. limit switches)
+        for digital_input in rospy.get_param('~digital_inputs'):
+            action_mask = digital_input['action']
+            if 1 in digital_input['motor_channels']:
+                action_mask += 16
+            if 2 in digital_input['motor_channels']:
+                action_mask += 32
+            self.execute_configuration_command('dina {} {}'.format(
+                    digital_input['input_channel'],
+                    action_mask))
+
+        # Save configuration to EEPROM. This is useful for debugging because we
+        # can later hook the controller up to the RoboRun utility to look at
+        # all of the parameters and make sure we set them to what we intended
+        # to.
+        self.execute_configuration_command('ees')
+
+    def execute_configuration_command(self, command):
+        with self._serial_lock:
+            command_str = u'^{}\r'.format(command)
+            rospy.logdebug('>> {}'.format(command_str))
+            self._sio.write(command_str)
+            response_str = self._sio.readline()
+            rospy.logdebug('<< {}'.format(response_str))
+            return response_str
+
+    def execute_maintenance_command(self, command):
+        with self._serial_lock:
+            command_str = u'%{}\r'.format(command)
+            rospy.logdebug('>> {}'.format(command_str))
+            self._sio.write(command_str)
+            response_str = self._sio.readline()
+            rospy.logdebug('<< {}'.format(response_str))
+            return response_str
+
+    def execute_runtime_command(self, command):
+        with self._serial_lock:
+            command_str = u'!{}\r'.format(command)
+            rospy.logdebug('>> {}'.format(command_str))
+            self._sio.write(command_str)
+            response_str = self._sio.readline()
+            rospy.logdebug('<< {}'.format(response_str))
+            return response_str
+
+    def execute_query(self, query):
+        with self._serial_lock:
+            query_str = u'?{}\r'.format(query)
+            rospy.logdebug('>> {}'.format(query_str))
+            self._sio.write(query_str)
+            response_str = self._sio.readline()
+            rospy.logdebug('<< {}'.format(response_str))
+            return response_str
+
+    def run(self):
+        rate = rospy.Rate(50)
+        while not rospy.is_shutdown():
+            for motor in self._motors:
+                command_delay = (
+                    rospy.Time.now() - motor.last_command_time).to_sec()
+                if command_delay < self._command_timeout:
+                    command_velocity = motor.command
+                else:
+                    command_velocity= 0.0
+
+                if motor.motor_reversed:
+                    command_velocity *= -1.0
+
+                # Set motor command
+                speed_to_command = int(1000.0 * command_velocity / motor.max_speed)
+                self.execute_runtime_command('g {} {}'.format(
+                    motor.channel, speed_to_command))
+
+                # Read encoder count
+                response = self.execute_query(
+                    'C {}'.format(motor.channel))
+                c_matches = re.match('C=([-0-9]+)', response)
+                if c_matches:
+                    motor.absolute_encoder_count = int(c_matches.group(1))
+
+                response = self.execute_query('FF')
+                print response
+
+                # Read velocity
+                response = self.execute_query(
+                    'S {}'.format(motor.channel))
+                c_matches = re.match('S=([-0-9]+)', response)
+                if c_matches:
+                    velocity_rpm = int(c_matches.group(1))
+                    if motor.motor_reversed:
+                        velocity_rpm *= -1.0
+                    motor.velocity = from_rpm(velocity_rpm)
+
+                # Publish motor state over ROS
+                motor.publish_state()
+
+            # Read supply voltage
+            supply_voltage = float('nan')
+            response = self.execute_query('V 2')
+            c_matches = re.match('V=([-0-9]+)', response)
+            if c_matches:
+                supply_voltage = float(c_matches.group(1)) / 10.0
+            self._supply_voltage_pub.publish(Float32(supply_voltage))
+
+            rate.sleep()
+
+if __name__ == '__main__':
+    port = sys.argv[1]
+
+    rospy.init_node('roboteq', anonymous=True)
+    roboteq = Roboteq(port)
+    roboteq.run()
