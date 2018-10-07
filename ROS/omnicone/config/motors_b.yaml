@@ -1,0 +1,21 @@
+port: "/dev/ttyACM1"
+
+command_timeout: 0.5
+
+motors: [
+    {
+    name: 'motor_back',
+    motor_reversed: false,
+    max_speed: 192,
+    max_acceleration: 1000,
+    max_deceleration: 1000,
+    max_duty_cycle: 100,
+    max_current: 1,
+    k_p: 2.0,
+    k_i: 2.0,
+    k_d: 0.0,
+    encoder_pulses_per_revolution: 20
+    }
+]
+
+digital_inputs: []

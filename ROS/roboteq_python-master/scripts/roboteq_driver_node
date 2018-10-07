@@ -14,7 +14,7 @@ def to_rpm(x):
     return x * 60.0 / (2.0 * math.pi)
 
 def to_rpm_per_sec(x):
-    """"Convert rad / sec**2 to RPM / s"""
+    """Convert rad / sec**2 to RPM / s"""
     return x * 60.0 / (2.0 * math.pi)
 
 def from_rpm(x):
