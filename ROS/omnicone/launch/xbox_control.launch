@@ -1,0 +1,9 @@
+<launch>
+
+<node name="start_xbox" pkg="omnicone" type="start_xbox" output="screen" />
+
+<node name="joy_node" pkg="joy" type="joy_node" output="screen" />
+
+<node name="xbox_control" pkg="omnicone" type="xbox_control" output="screen" />
+
+</launch>

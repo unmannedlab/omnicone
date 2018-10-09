@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+# Before this will work:
+# sudo rmmod xpad
+# sudo su
+# echo "blacklist xpad" > /etc/modprobe.d/blacklist.conf
+# sudo add-apt-repository ppa:grumbel/ppa
+# sudo apt-get update
+# sudo apt-get install xboxdrv
+import os
+os.system("sudo -S xboxdrv --silent")
