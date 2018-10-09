@@ -7,5 +7,12 @@
 # sudo add-apt-repository ppa:grumbel/ppa
 # sudo apt-get update
 # sudo apt-get install xboxdrv
-import os
-os.system("sudo -S xboxdrv --silent")
+
+
+# To start controlling
+# sudo -S xboxdrv --silent
+
+# Read the number of the controller
+# rosparam set joy_node/dev "/dev/input/jsX"
+
+# roslaunch omnicone xbox_control.launch

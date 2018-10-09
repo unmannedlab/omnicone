@@ -1,16 +1,4 @@
-<!--Run the following commands in install xboxdrv-->
-<!-- sudo rmmod xpad -->
-<!-- sudo su -->
-<!-- echo "blacklist xpad" > /etc/modprobe.d/blacklist.conf -->
-<!-- sudo add-apt-repository ppa:grumbel/ppa -->
-<!-- sudo apt-get update -->
-<!-- sudo apt-get install xboxdrv -->
-
 <launch>
-
-<node name="start_xbox" pkg="omnicone" type="start_xbox" output="screen" />
-
-<node name="joy_node" pkg="joy" type="joy_node" output="screen" />
 
 <node name="xbox_control" pkg="omnicone" type="xbox_control" output="screen" />
 
