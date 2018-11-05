@@ -12,8 +12,8 @@ class OmniGui(QObject):
     def __init__(self):
         super(OmniGui, self).__init__()
 
-        rospy.init_node('Distance_test')
-        self.pub = rospy.Publisher('robot_vel_goal', Pose2D, queue_size=100)
+        rospy.init_node('omni_gui')
+        self.pub = rospy.Publisher('robot_vel_goal', Pose2D, queue_size=10)
 
         self.app = QApplication(sys.argv)
         self.window = QMainWindow()
@@ -85,14 +85,13 @@ class OmniGui(QObject):
         time = distance/self.linearSpeed
 
         rate = rospy.Rate(10)
-        while not (rospy.get_rostime() - start_time < rospy.Duration.from_sec(4.0 + time) and
-        not rospy.is_shutdown()):
-            if (rospy.get_rostime() - start_time > rospy.Duration.from_sec(2.0) and
-            rospy.get_rostime() - start_time < rospy.Duration.from_sec(2.0 + time)):
-                msg.x = self.currentX / distance * 60
-                msg.y = self.currentY / distance * 60
+        while (not rospy.is_shutdown()):
+            if (rospy.get_rostime() - start_time > rospy.Duration.from_sec(1.0) and
+            rospy.get_rostime() - start_time < rospy.Duration.from_sec(1.0 + time)):
+                msg.x = self.currentX / time
+                msg.y = self.currentY / time
                 msg.theta = 0.0
-            elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(20.0)):
+            elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(2.0 + time)):
                 break
             else:
                 msg.x = 0.0

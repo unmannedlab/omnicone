@@ -32,7 +32,7 @@ class VelCommander:
     def updateVels(self, goal):
         resp = self.ik_service_client(goal)
 
-        linear_to_rpm = 1 / 0.0508 * 60 / (2 * pi)
+        linear_to_rpm = 60 / (4*pi*0.0254)
 
         self.vel_left = -resp.output.v_left * linear_to_rpm
         self.vel_back = -resp.output.v_back * linear_to_rpm
