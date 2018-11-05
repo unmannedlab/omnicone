@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Float32
-from geometry_msgs.msg import Pose2D
+from std_msgs.msg import Float32,Int32
+from geometry_msgs.msg import Pose2D,Point
 from open_base.srv import KinematicsInverse
 
 class VelCommander:
@@ -11,12 +11,18 @@ class VelCommander:
         self.left_pub = rospy.Publisher('/motor_left/command', Float32, queue_size=10)
         self.back_pub = rospy.Publisher('/motor_back/command', Float32, queue_size=10)
         self.right_pub = rospy.Publisher('/motor_right/command', Float32, queue_size=10)
+        self.test_pub = rospy.Publisher('/testing', Point, queue_size=10)
 
         # create the subscriber for the goal velocity
-        self.goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
+        self.vel_goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
+        self.pos_goal_sub = rospy.Subscriber('/robot_pos_goal', Pose2D, self.updatePos)
+        self.motor_b_enc = rospy.Subscriber('/motor_back/absolute_encoder_count', Int32, self.updateEnc_b)
+        self.motor_l_enc = rospy.Subscriber('/motor_left/absolute_encoder_count', Int32, self.updateEnc_l)
+        self.motor_r_enc = rospy.Subscriber('/motor_right/absolute_encoder_count', Int32, self.updateEnc_r)
 
         # create the caller to the inverse kinematics server
         self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
+        self.fk_service_client = rospy.ServiceProxy('/kinematics_forward_world', KinematicsInverse)
 
         rospy.init_node('vel_command_publisher')
 
@@ -24,9 +30,28 @@ class VelCommander:
         self.vel_back = 0.0
         self.vel_right = 0.0
 
+        self.enc_b = 0
+        self.enc_l = 0
+        self.enc_r = 0
+        self.enc_b_last = 0
+        self.enc_l_last = 0
+        self.enc_r_last = 0
+
+        self.test = Point(0,0,0)
+
         self.command_timeout = 1.0
 
         self.last_command = rospy.Time().now()
+        self.last_time = rospy.Time().now()
+
+    def updateEnc_b(self, count):
+        self.enc_b = count.data
+
+    def updateEnc_l(self, count):
+        self.enc_l = count.data
+
+    def updateEnc_r(self, count):
+        self.enc_r = count.data
 
     def updateVels(self, goal):
         resp = self.ik_service_client(goal)
@@ -34,8 +59,23 @@ class VelCommander:
         self.vel_left = -resp.output.v_left
         self.vel_back = -resp.output.v_back
         self.vel_right = -resp.output.v_right
+        self.test = Point(self.enc_l,self.enc_r,self.enc_b)
 
         self.last_command = rospy.Time.now()
+
+    def updatePos(self, goal):
+        t = rospy.Time().now() - self.last_time
+        self.last_time = rospy.Time().now()
+
+        v_b = (self.enc_b - self.enc_b_last)/994.0
+        v_l = (self.enc_l - self.enc_l_last)/994.0
+        v_r = (self.enc_r - self.enc_r_last)/994.0
+
+        pos_est = self.fk_service_client(goal)
+
+        self.enc_b_last = self.enc_b
+        self.enc_l_last = self.enc_l
+        self.enc_r_last = self.enc_r
 
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
@@ -47,10 +87,12 @@ class VelCommander:
                 self.vel_back = 0.0
                 self.vel_right = 0.0
 
+
+
             self.left_pub.publish(self.vel_left)
             self.back_pub.publish(self.vel_back)
             self.right_pub.publish(self.vel_right)
-
+            self.test_pub.publish(self.test)
             rate.sleep()
 
 

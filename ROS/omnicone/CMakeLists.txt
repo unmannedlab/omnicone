@@ -165,6 +165,7 @@ include_directories(
    scripts/vel_command_publisher.py
    scripts/xbox_control.py
    scripts/start_xbox.py
+   scripts/distance_test.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

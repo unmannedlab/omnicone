@@ -13,9 +13,9 @@ from geometry_msgs.msg import Pose2D
 # axis 0 aka left stick horizonal controls angular speed
 def callback(data):
     msg = Pose2D()
-    msg.x = -60*data.axes[0]
-    msg.y = 60*data.axes[1]
-    msg.theta = 200*((data.axes[4]-1)-(data.axes[5]-1))
+    msg.x = -1*data.axes[0]
+    msg.y = 1*data.axes[1]
+    msg.theta = 20*((data.axes[4]-1)-(data.axes[5]-1))
     pub.publish(msg)
 
 # Intializes everything
