@@ -37,9 +37,9 @@ void onJointStateMessage(const sensor_msgs::JointState::ConstPtr& input){
         }
     }
     duration = (timeCurrent - timePrevious).toSec();
-    v_left  = (theta_left_current  - theta_left_previous ) / duration;
-    v_back  = (theta_back_current  - theta_back_previous ) / duration;
-    v_right = (theta_right_current - theta_right_previous) / duration;
+    v_left  = -(theta_left_current  - theta_left_previous ) / duration;
+    v_back  = -(theta_back_current  - theta_back_previous ) / duration;
+    v_right = -(theta_right_current - theta_right_previous) / duration;
     message.v_left  = v_left ;
     message.v_back  = v_back ;
     message.v_right = v_right;

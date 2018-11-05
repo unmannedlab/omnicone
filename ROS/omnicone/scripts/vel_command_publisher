@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Float32
+from math import pi
+from std_msgs.msg import Float64
 from geometry_msgs.msg import Pose2D
 from open_base.srv import KinematicsInverse
 
 class VelCommander:
 
     def __init__(self):
+        rospy.init_node('vel_command_publisher')
+
         # create the publisher for each individual motor
-        self.left_pub = rospy.Publisher('/motor_left/command', Float32, queue_size=10)
-        self.back_pub = rospy.Publisher('/motor_back/command', Float32, queue_size=10)
-        self.right_pub = rospy.Publisher('/motor_right/command', Float32, queue_size=10)
+        self.left_pub = rospy.Publisher('left_joint_velocity_controller/command', Float64, queue_size=10)
+        self.back_pub = rospy.Publisher('back_joint_velocity_controller/command', Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
 
         # create the subscriber for the goal velocity
         self.goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
 
         # create the caller to the inverse kinematics server
         self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
-
-        rospy.init_node('vel_command_publisher')
 
         self.vel_left = 0.0
         self.vel_back = 0.0
@@ -31,9 +32,11 @@ class VelCommander:
     def updateVels(self, goal):
         resp = self.ik_service_client(goal)
 
-        self.vel_left = -resp.output.v_left
-        self.vel_back = -resp.output.v_back
-        self.vel_right = -resp.output.v_right
+        linear_to_rpm = 1 / 0.0508 * 60 / (2 * pi)
+
+        self.vel_left = -resp.output.v_left * linear_to_rpm
+        self.vel_back = -resp.output.v_back * linear_to_rpm
+        self.vel_right = -resp.output.v_right * linear_to_rpm
 
         self.last_command = rospy.Time.now()
 

@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+import rospy
+from sensor_msgs.msg import JointState
+from std_msgs.msg import Int32, Float64
+
+class OmniJointPub:
+
+    def __init__(self):
+        rospy.init_node("omni_joint_publisher")
+
+        self.left_encoder_sub = rospy.Subscriber('left_joint_velocity_controller/absolute_encoder_count', Int32, self.onLeftEncoderMsg)
+        self.back_encoder_sub = rospy.Subscriber('back_joint_velocity_controller/absolute_encoder_count', Int32, self.onBackEncoderMsg)
+        self.right_encoder_sub = rospy.Subscriber('right_joint_velocity_controller/absolute_encoder_count', Int32, self.onRightEncoderMsg)
+
+        self.joint_state_pub = rospy.Publisher('joint_states', JointState, queue_size=10)
+
+        self.cpr = 756.0
+
+        self.state = JointState()
+        self.state.name = ['l', 'b', 'r']
+
+        self.left_msg = 0
+        self.back_msg = 0
+        self.right_msg = 0
+
+        self.should_publish = 0x0
+
+    def onLeftEncoderMsg(self, left_msg):
+        self.left_msg = left_msg.data
+
+        self.should_publish = self.should_publish | 0x1
+
+        if (self.should_publish == 0x7):
+            self.publishState()
+
+    def onBackEncoderMsg(self, back_msg):
+        self.back_msg = back_msg.data
+
+        self.should_publish = self.should_publish | 0x2
+
+        if (self.should_publish == 0x7):
+            self.publishState()
+
+    def onRightEncoderMsg(self, right_msg):
+        self.right_msg = right_msg.data
+
+        self.should_publish = self.should_publish | 0x4
+
+        if (self.should_publish == 0x7):
+            self.publishState()
+
+    def publishState(self):
+        self.state.position = [self.left_msg/self.cpr, self.back_msg/self.cpr, self.right_msg/self.cpr]
+
+        self.joint_state_pub.publish(self.state)
+
+        self.should_publish = 0x0
+
+if __name__ == '__main__':
+
+    omni_joint_publisher = OmniJointPub()
+    rospy.spin()
