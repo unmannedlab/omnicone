@@ -69,11 +69,14 @@ class VelCommander:
         resp = self.ik_service_client(goal)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         self.vel_left = -resp.output.v_left
         self.vel_back = -resp.output.v_back
         self.vel_right = -resp.output.v_right
         self.test = Point(self.enc_l,self.enc_r,self.enc_b)
 =======
+=======
+>>>>>>> 8c4d6d2... Minor adjustments to get GUI to work
         linear_to_rpm = 60 / (4*pi*0.0254)
 
         self.vel_left = -resp.output.v_left * linear_to_rpm
