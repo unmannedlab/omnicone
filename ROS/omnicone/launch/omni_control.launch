@@ -1,0 +1,28 @@
+<launch>
+
+<include file="$(find open_base)/launch/parameter.launch" />
+
+<param  name="robot_description"
+        command="$(find xacro)/xacro --inorder '$(find open_base)/xacro/main.urdf.xacro'" />
+
+<node name="driver_node_a" pkg="roboteq_python" type="roboteq_driver_node" output="screen">
+    <rosparam command="load" file="$(find omnicone)/config/motors_a.yaml" />
+</node>
+
+<node name="driver_node_b" pkg="roboteq_python" type="roboteq_driver_node" output="screen">
+    <rosparam command="load" file="$(find omnicone)/config/motors_b.yaml" />
+</node>
+
+<node name="rqt_publisher" pkg="rqt_publisher" type="rqt_publisher" />
+
+<node name="kinematics_node" pkg="open_base" type="open_base_kinematics" ns="open_base"/>
+
+<node name="omni_joint_publisher" pkg="omnicone" type="omni_joint_publisher" ns="open_base"/>
+
+<node name="encoder" pkg="open_base" type="open_base_sensor_encoder" ns="open_base/sensor"/>
+
+<node name="odometry_node" pkg="open_base" type="open_base_odometry" ns="open_base"/>
+
+<node name="controller_node" pkg="open_base" type="open_base_main" ns="open_base"/>
+
+</launch>

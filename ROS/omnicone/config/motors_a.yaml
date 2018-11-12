@@ -4,7 +4,7 @@ command_timeout: 0.5
 
 motors: [
     {
-    name: 'motor_right',
+    name: 'right_joint_velocity_controller',
     motor_reversed: false,
     max_speed: 100,
     max_acceleration: 750,
@@ -17,7 +17,7 @@ motors: [
     encoder_pulses_per_revolution: 20
     },
     {
-    name: 'motor_left',
+    name: 'left_joint_velocity_controller',
     motor_reversed: false,
     max_speed: 100,
     max_acceleration: 750,

@@ -7,7 +7,7 @@ import functools
 import math
 import serial
 import rospy
-from std_msgs.msg import Float32, Int32
+from std_msgs.msg import Float64, Int32
 
 def to_rpm(x):
     """Convert rad / sec to RPM"""
@@ -57,7 +57,7 @@ class Motor:
 
         self.command_subscriber = rospy.Subscriber(
             '{}/command'.format(self.name),
-            Float32,
+            Float64,
             functools.partial(self.set_command))
 
         self.absolute_encoder_count_publisher = rospy.Publisher(
@@ -67,12 +67,12 @@ class Motor:
 
         self.velocity_publisher = rospy.Publisher(
             '{}/velocity'.format(self.name),
-            Float32,
+            Float64,
             queue_size=100)
 
     def set_command(self, command_msg):
         """
-        Set the command for the motor from a std_msgs/Float32
+        Set the command for the motor from a std_msgs/Float64
         """
         self.command = command_msg.data
         self.last_command_time = rospy.Time.now()
@@ -83,7 +83,7 @@ class Motor:
                 Int32(self.absolute_encoder_count))
 
         if self.velocity is not None:
-            self.velocity_publisher.publish(Float32(self.velocity))
+            self.velocity_publisher.publish(Float64(self.velocity))
 
 class Roboteq:
     def __init__(self, port):
@@ -114,7 +114,7 @@ class Roboteq:
         self._serial_lock = threading.RLock()
 
         # Create battery voltage publisher
-        self._supply_voltage_pub = rospy.Publisher('supply_voltage', Float32, queue_size=10)
+        self._supply_voltage_pub = rospy.Publisher('supply_voltage', Float64, queue_size=10)
 
         # Load motor parameters
         self._motors = [Motor(motor_i + 1, param_dict)
@@ -302,7 +302,7 @@ class Roboteq:
             c_matches = re.match('V=([-0-9]+)', response)
             if c_matches:
                 supply_voltage = float(c_matches.group(1)) / 10.0
-            self._supply_voltage_pub.publish(Float32(supply_voltage))
+            self._supply_voltage_pub.publish(Float64(supply_voltage))
 
             rate.sleep()
 

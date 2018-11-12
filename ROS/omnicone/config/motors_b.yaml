@@ -4,7 +4,7 @@ command_timeout: 0.5
 
 motors: [
     {
-    name: 'motor_back',
+    name: 'back_joint_velocity_controller',
     motor_reversed: false,
     max_speed: 100,
     max_acceleration: 750,

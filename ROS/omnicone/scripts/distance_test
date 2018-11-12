@@ -6,6 +6,7 @@ from geometry_msgs.msg import Pose2D
 
 
 def start():
+    
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         if rospy.get_rostime() - start_time > rospy.Duration.from_sec(2.0) and rospy.get_rostime() - start_time < rospy.Duration.from_sec(17.6):
