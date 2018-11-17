@@ -1,5 +1,0 @@
-<launch>
-
-<node name="xbox_control" pkg="omnicone" type="xbox_control" output="screen" />
-
-</launch>
