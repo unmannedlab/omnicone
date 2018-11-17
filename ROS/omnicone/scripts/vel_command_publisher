@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 import rospy
-<<<<<<< HEAD
 from std_msgs.msg import Float32,Int32
 from geometry_msgs.msg import Pose2D,Point
-=======
+
 from math import pi
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Pose2D
->>>>>>> 8c4d6d263f50a3fae4a3cce91e4c3c19dfffd0a2
 from open_base.srv import KinematicsInverse
 
 class VelCommander:
@@ -15,17 +13,15 @@ class VelCommander:
     def __init__(self):
         rospy.init_node('vel_command_publisher')
 
-        # create the publisher for each individual motor
-<<<<<<< HEAD
+        # create the publisher for each individual
         self.left_pub = rospy.Publisher('/motor_left/command', Float32, queue_size=10)
         self.back_pub = rospy.Publisher('/motor_back/command', Float32, queue_size=10)
         self.right_pub = rospy.Publisher('/motor_right/command', Float32, queue_size=10)
         self.test_pub = rospy.Publisher('/testing', Point, queue_size=10)
-=======
+
         self.left_pub = rospy.Publisher('left_joint_velocity_controller/command', Float64, queue_size=10)
         self.back_pub = rospy.Publisher('back_joint_velocity_controller/command', Float64, queue_size=10)
         self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
->>>>>>> 8c4d6d263f50a3fae4a3cce91e4c3c19dfffd0a2
 
         # create the subscriber for the goal velocity
         self.vel_goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
@@ -68,21 +64,17 @@ class VelCommander:
     def updateVels(self, goal):
         resp = self.ik_service_client(goal)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+
         self.vel_left = -resp.output.v_left
         self.vel_back = -resp.output.v_back
         self.vel_right = -resp.output.v_right
         self.test = Point(self.enc_l,self.enc_r,self.enc_b)
-=======
-=======
->>>>>>> 8c4d6d2... Minor adjustments to get GUI to work
+
         linear_to_rpm = 60 / (4*pi*0.0254)
 
         self.vel_left = -resp.output.v_left * linear_to_rpm
         self.vel_back = -resp.output.v_back * linear_to_rpm
         self.vel_right = -resp.output.v_right * linear_to_rpm
->>>>>>> 8c4d6d263f50a3fae4a3cce91e4c3c19dfffd0a2
 
         self.last_command = rospy.Time.now()
 
