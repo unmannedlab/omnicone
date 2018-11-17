@@ -163,8 +163,6 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
  install(PROGRAMS
    scripts/vel_command_publisher.py
-   scripts/xbox_control.py
-   scripts/start_xbox.py
    scripts/distance_test.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )

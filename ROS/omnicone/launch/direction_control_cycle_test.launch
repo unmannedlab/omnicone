@@ -13,7 +13,7 @@
 
 <node name="kinematics_node" pkg="open_base" type="open_base_kinematics" />
 
-<node name="omni_gui_cycle_test" pkg="omnicone" type="omni_gui.py" output="screen"/>
+<node name="omni_gui_cycle_test" pkg="omnicone" type="omni_gui_cycle_test.py" output="screen"/>
 
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher"/>
 

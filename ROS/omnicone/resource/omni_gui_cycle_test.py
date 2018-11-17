@@ -86,22 +86,22 @@ class OmniGui(QObject):
 
         rate = rospy.Rate(10)
 
-        for i in range(0, 5):
+        for i in range(0, 4):
             start_time = rospy.get_rostime()
             while (not rospy.is_shutdown()):
                 if (rospy.get_rostime() - start_time > rospy.Duration.from_sec(1.0) and
-                rospy.get_rostime() - start_time < rospy.Duration.from_sec(1.0 + time)):
+                rospy.get_rostime() - start_time < rospy.Duration.from_sec(2.0 + time)):
                     msg.x = self.currentX / time
                     msg.y = self.currentY / time
                     msg.theta = 0.0
 
-                elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(1.0 + time) and
-                rospy.get_rostime() - start_time < rospy.Duration.from_sec(1.0 + 2*time)):
+                elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(2.0 + time) and
+                rospy.get_rostime() - start_time < rospy.Duration.from_sec(4.0 + 2*time)):
                     msg.x = -self.currentX / time
                     msg.y = -self.currentY / time
                     msg.theta = 0.0
 
-                elif rospy.get_rostime() - start_time > rospy.Duration.from_sec(1.0 + 2*time)):
+                elif rospy.get_rostime() - start_time > rospy.Duration.from_sec(6.0 + 2*time):
                     break
 
                 else:
@@ -109,8 +109,8 @@ class OmniGui(QObject):
                     msg.y = 0.0
                     msg.theta = 0.0
 
-            self.pub.publish(msg)
-            rate.sleep()
+                self.pub.publish(msg)
+                rate.sleep()
 
     def run(self):
         self.window.show()
