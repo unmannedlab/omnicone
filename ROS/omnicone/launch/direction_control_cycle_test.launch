@@ -1,5 +1,8 @@
 <launch>
 
+<arg name="num_cycles" default="1"/>
+<arg name="total_time" default="-1"/>
+
 <param  name="robot_description"
         command="$(find xacro)/xacro --inorder '$(find open_base)/xacro/main.urdf.xacro'" />
 
@@ -13,7 +16,10 @@
 
 <node name="kinematics_node" pkg="open_base" type="open_base_kinematics" />
 
-<node name="omni_gui_cycle_test" pkg="omnicone" type="omni_gui_cycle_test.py" output="screen"/>
+<node name="omni_gui_cycle_test" pkg="omnicone" type="omni_gui_cycle_test.py" output="screen">
+	<param name="num_cycles" value="$(arg num_cycles)"/>
+	<param name="total_time" value="$(arg total_time)"/>
+</node>
 
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher"/>
 

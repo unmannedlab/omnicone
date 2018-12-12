@@ -1,5 +1,0 @@
-#!/bin/bash
-source ~/catkin_ws/devel/setup.bash
-roslaunch pointgrey_camera_driver camera.launch
-rosrun image_view image_view image:=/camera/image_mono
-

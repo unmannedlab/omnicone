@@ -15,6 +15,9 @@ class OmniGui(QObject):
         rospy.init_node('omni_gui')
         self.pub = rospy.Publisher('robot_vel_goal', Pose2D, queue_size=10)
 
+	self.totalTime = rospy.get_param('~total_time', -1)
+	self.numCycles = rospy.get_param('~num_cycles', 1)
+
         self.app = QApplication(sys.argv)
         self.window = QMainWindow()
         self.ui = Ui_MainWindow()
@@ -25,6 +28,8 @@ class OmniGui(QObject):
 
         self.linearSpeed = 4*pi*0.0254
         self.rpm = 60
+
+	self.start_time = None
 
         self.ui.button0.released.connect(self.setDistance)
         self.ui.button1.released.connect(self.setDistance)
@@ -76,6 +81,9 @@ class OmniGui(QObject):
         self.updateX()
         self.updateY()
 
+    def getDuration(self):
+	return rospy.get_time() - self.start_time
+
     def move(self):
 
         msg = Pose2D()
@@ -83,25 +91,28 @@ class OmniGui(QObject):
         distance = (self.currentX ** 2 + self.currentY ** 2) ** 0.5
 
         time = distance/self.linearSpeed
+		
+	if self.totalTime == -1 or self.totalTime - 2 * time < 0:
+	    wait_time = 4.0
+	else:
+	    wait_time = self.totalTime - 2 * time
 
         rate = rospy.Rate(10)
 
-        for i in range(0, 4):
-            start_time = rospy.get_rostime()
+        for i in range(0, self.numCycles):
+            self.start_time = rospy.get_time()
             while (not rospy.is_shutdown()):
-                if (rospy.get_rostime() - start_time > rospy.Duration.from_sec(1.0) and
-                rospy.get_rostime() - start_time < rospy.Duration.from_sec(2.0 + time)):
+                if (self.getDuration() > 2.0 and self.getDuration() < 2.0 + time):
                     msg.x = self.currentX / time
                     msg.y = self.currentY / time
                     msg.theta = 0.0
 
-                elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(2.0 + time) and
-                rospy.get_rostime() - start_time < rospy.Duration.from_sec(4.0 + 2*time)):
+                elif (self.getDuration() > 2.0 + wait_time + time and self.getDuration() < 2.0 + wait_time + 2*time):
                     msg.x = -self.currentX / time
                     msg.y = -self.currentY / time
                     msg.theta = 0.0
 
-                elif rospy.get_rostime() - start_time > rospy.Duration.from_sec(6.0 + 2*time):
+                elif self.getDuration() > 6.0 + wait_time + 2*time:
                     break
 
                 else:
