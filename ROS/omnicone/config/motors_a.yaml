@@ -1,5 +1,4 @@
-port: "/dev/ttyACM0"
-
+controller_num: 1
 command_timeout: 0.5
 
 motors: [

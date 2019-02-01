@@ -21,6 +21,32 @@ def from_rpm(x):
     """Convert RPM to rad / sec"""
     return x / 60.0 * 2.0 * math.pi
 
+def get_motor_port(motor_num):
+    #Checks controller id to verify ports
+    for motor_port in ["/dev/ttyACM0","/dev/ttyACM1"]:
+        try:
+            ser = serial.Serial(
+                port=motor_port,
+                baudrate=115200,
+                bytesize=8,
+                parity='N',
+                stopbits=1,
+                xonxoff=False,
+                timeout=0.1,
+                )
+            query_str="~CNOD\r"
+            ser.write(query_str)
+            responses = (str([ser.readall()]))
+            var_matches = re.search('CNOD=([0-9]+)', responses)
+            if var_matches:
+                idnum = int(var_matches.groups()[0])
+                if idnum == motor_num:
+                    return(motor_port)
+
+        except serial.SerialException:
+            pass
+
+
 class Motor:
     """Holds all parameters for one motor."""
     def __init__(self, channel, param_dict):
@@ -86,8 +112,9 @@ class Motor:
             self.velocity_publisher.publish(Float64(self.velocity))
 
 class Roboteq:
-    def __init__(self, port):
-        port = rospy.get_param('~port')
+    def __init__(self):
+        port = get_motor_port(rospy.get_param('~controller_num'))
+
         self._command_timeout = rospy.get_param('~command_timeout', 0.5)
 
         self._ser = serial.Serial(
@@ -307,8 +334,6 @@ class Roboteq:
             rate.sleep()
 
 if __name__ == '__main__':
-    port = sys.argv[1]
-
     rospy.init_node('roboteq', anonymous=True)
-    roboteq = Roboteq(port)
+    roboteq = Roboteq()
     roboteq.run()
