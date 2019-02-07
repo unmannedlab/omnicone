@@ -1,20 +1,26 @@
 <launch>
 
+<arg name="gui" default="False"/>
+<arg name="key" default="False"/>
+
+
 <param  name="robot_description"
         command="$(find xacro)/xacro --inorder '$(find open_base)/xacro/main.urdf.xacro'" />
 
-<node name="driver_node_a" pkg="roboteq_python" type="roboteq_driver_node">
+<node name="driver_node_a" pkg="roboteq_python" type="roboteq_driver_node" >
     <rosparam command="load" file="$(find omnicone)/config/motors_a.yaml" />
 </node>
 
-<node name="driver_node_b" pkg="roboteq_python" type="roboteq_driver_node">
+<node name="driver_node_b" pkg="roboteq_python" type="roboteq_driver_node" >
     <rosparam command="load" file="$(find omnicone)/config/motors_b.yaml" />
 </node>
 
 <node name="kinematics_node" pkg="open_base" type="open_base_kinematics" />
 
-<node name="omni_gui" pkg="omnicone" type="omni_gui.py" output="screen"/>
-
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher"/>
+
+<group if="$(eval gui)">
+    <node name="omni_gui" pkg="omnicone" type="omni_gui.py" output="screen"/>
+</group>
 
 </launch>

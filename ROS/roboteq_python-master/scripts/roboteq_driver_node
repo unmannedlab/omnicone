@@ -7,6 +7,8 @@ import functools
 import math
 import serial
 import rospy
+import rosnode
+
 from std_msgs.msg import Float64, Int32
 
 def to_rpm(x):
@@ -23,7 +25,7 @@ def from_rpm(x):
 
 def get_motor_port(motor_num):
     #Checks controller id to verify ports
-    for motor_port in ["/dev/ttyACM0","/dev/ttyACM1"]:
+    for motor_port in ["/dev/ttyACM0","/dev/ttyACM1","/dev/ttyACM0","/dev/ttyACM1"]:
         try:
             ser = serial.Serial(
                 port=motor_port,
@@ -113,6 +115,7 @@ class Motor:
 
 class Roboteq:
     def __init__(self):
+
         port = get_motor_port(rospy.get_param('~controller_num'))
 
         self._command_timeout = rospy.get_param('~command_timeout', 0.5)
@@ -124,7 +127,7 @@ class Roboteq:
             parity='N',
             stopbits=1,
             xonxoff=False,
-            timeout=1,
+            timeout=0.1,
             )
 
         self._sio = io.TextIOWrapper(
@@ -308,7 +311,6 @@ class Roboteq:
                     motor.absolute_encoder_count = int(c_matches.group(1))
 
                 response = self.execute_query('FF')
-                print response
 
                 # Read velocity
                 response = self.execute_query(
