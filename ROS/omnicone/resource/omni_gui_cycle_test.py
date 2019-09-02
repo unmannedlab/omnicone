@@ -91,7 +91,7 @@ class OmniGui(QObject):
         distance = (self.currentX ** 2 + self.currentY ** 2) ** 0.5
 
         time = distance/self.linearSpeed
-		
+
 	if self.totalTime == -1 or self.totalTime - 2 * time < 0:
 	    wait_time = 4.0
 	else:

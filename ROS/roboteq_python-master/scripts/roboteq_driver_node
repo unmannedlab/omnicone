@@ -25,28 +25,30 @@ def from_rpm(x):
 
 def get_motor_port(motor_num):
     #Checks controller id to verify ports
-    for motor_port in ["/dev/ttyACM0","/dev/ttyACM1","/dev/ttyACM0","/dev/ttyACM1"]:
-        try:
-            ser = serial.Serial(
-                port=motor_port,
-                baudrate=115200,
-                bytesize=8,
-                parity='N',
-                stopbits=1,
-                xonxoff=False,
-                timeout=0.1,
-                )
-            query_str="~CNOD\r"
-            ser.write(query_str)
-            responses = (str([ser.readall()]))
-            var_matches = re.search('CNOD=([0-9]+)', responses)
-            if var_matches:
-                idnum = int(var_matches.groups()[0])
-                if idnum == motor_num:
-                    return(motor_port)
+    while True:
+        for motor_port in ["/dev/ttyACM0","/dev/ttyACM1"]:
+            try:
+                print('Port: ', motor_port, ' Num: ', motor_num)
+                ser = serial.Serial(
+                    port=motor_port,
+                    baudrate=115200,
+                    bytesize=8,
+                    parity='N',
+                    stopbits=1,
+                    xonxoff=False,
+                    timeout=0.1,
+                    )
+                query_str="~CNOD\r"
+                ser.write(query_str)
+                responses = (str([ser.readall()]))
+                var_matches = re.search('CNOD=([0-9]+)', responses)
+                if var_matches:
+                    idnum = int(var_matches.groups()[0])
+                    if idnum == motor_num:
+                        return(motor_port)
 
-        except serial.SerialException:
-            pass
+            except serial.SerialException:
+                pass
 
 
 class Motor:

@@ -3,7 +3,7 @@
 <arg name="num_cycles" default="1"/>
 <arg name="total_time" default="-1"/>
 
-<param  name="robot_description"
+<param name="robot_description"
         command="$(find xacro)/xacro --inorder '$(find open_base)/xacro/main.urdf.xacro'" />
 
 <node name="driver_node_a" pkg="roboteq_python" type="roboteq_driver_node">
