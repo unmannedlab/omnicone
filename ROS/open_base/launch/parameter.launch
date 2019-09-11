@@ -50,7 +50,7 @@
 	/>
 	<param
 		name="open_base/parameter/wheel/radius"
-		value="0.01905"
+		value="0.1905"
 	/>
 
 </launch>

@@ -23,8 +23,9 @@ class OmniGui(QObject):
         self.currentX = 0.0
         self.currentY = 0.0
 
-        self.linearSpeed = 4*pi*0.0254
-        self.rpm = 60
+        self.rpm = 50.0                                         # rev / minute
+        self.circumference = pi * 0.101                         # meters
+        self.linear_speed = self.rpm / 60 * self.circumference  # m/s
 
         self.ui.button0.released.connect(self.setDistance)
         self.ui.button1.released.connect(self.setDistance)
@@ -80,16 +81,16 @@ class OmniGui(QObject):
         start_time = rospy.get_rostime()
         msg = Pose2D()
 
-        distance = (self.currentX ** 2 + self.currentY ** 2) ** 0.5
+        distance = (self.currentX ** 2 + self.currentY ** 2) ** 0.5 # meters
 
-        time = distance/self.linearSpeed
+        time = distance / self.linear_speed                         # seconds
 
         rate = rospy.Rate(10)
         while (not rospy.is_shutdown()):
             if (rospy.get_rostime() - start_time > rospy.Duration.from_sec(1.0) and
             rospy.get_rostime() - start_time < rospy.Duration.from_sec(1.0 + time)):
-                msg.x = self.currentX / time
-                msg.y = self.currentY / time
+                msg.x = self.linear_speed * self.currentX / distance
+                msg.y = self.linear_speed * self.currentY / distance
                 msg.theta = 0.0
             elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(2.0 + time)):
                 break
