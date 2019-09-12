@@ -1,7 +1,6 @@
 <launch>
 
 <arg name="gui" default="False"/>
-<arg name="key" default="False"/>
 
 
 <param  name="robot_description"
@@ -19,8 +18,6 @@
 
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher" output="screen"/>
 
-<group if="$(eval gui)">
-    <node name="omni_gui" pkg="omnicone" type="omni_gui.py" output="screen"/>
-</group>
+<node name="pos_cmd" pkg="omnicone" type="pos_cmd_gui.py" output="screen"/>
 
 </launch>

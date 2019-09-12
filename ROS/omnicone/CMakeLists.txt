@@ -164,6 +164,7 @@ include_directories(
  install(PROGRAMS
    scripts/vel_command_publisher.py
    scripts/distance_test.py
+   resource/gui/pos_cmd_gui.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
@@ -200,3 +201,6 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+set(CMAKE_AUTOUIC ON)
