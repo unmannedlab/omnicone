@@ -28,7 +28,7 @@ def get_motor_port(motor_num):
     loop = 0
     while loop < 100:
         loop = loop + 1
-        for motor_port in ["/dev/ttyACM0","/dev/ttyACM1","/dev/ttyACM2"]:
+        for motor_port in ["/dev/ttyACM0","/dev/ttyACM1","/dev/ttyACM2","/dev/ttyACM3"]:
             try:
 
                 ser = serial.Serial(
@@ -52,11 +52,7 @@ def get_motor_port(motor_num):
             except serial.SerialException:
                 pass
     print('Port Access Error')
-
-    if motor_num == 1:
-        return "/dev/ttyACM0"
-    else:
-        return "/dev/ttyACM1"
+    return None
 
 
 class Motor:

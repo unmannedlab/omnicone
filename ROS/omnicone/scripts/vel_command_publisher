@@ -62,7 +62,6 @@ class VelCommander:
         if not self.enc_init[0]:
             self.enc_prev[0] = self.enc_curr[0]
             self.enc_init[0] = True
-            print('Init L')
 
     def updateEnc_back(self, msg):
         # Back Motor Encoder Callback
@@ -74,7 +73,6 @@ class VelCommander:
         if not self.enc_init[1]:
             self.enc_prev[1] = self.enc_curr[1]
             self.enc_init[1] = True
-            print('Init B')
 
     def updateVels(self, goal):
         resp = self.ik_service_client(goal)
@@ -97,12 +95,11 @@ class VelCommander:
         if not self.enc_init[2]:
             self.enc_prev[2] = self.enc_curr[2]
             self.enc_init[2] = True
-            print('Init R')
 
         # num encoder counts / (4 counts / cycle ) / ( 7 * 27 cycles / rev) (2pi rad / rev)
-        theta_l = float(self.enc_curr[0] - self.enc_prev[0]) / 4 / (7 * 27) * (2 * pi)
-        theta_b = float(self.enc_curr[1] - self.enc_prev[1]) / 4 / (7 * 27) * (2 * pi)
-        theta_r = float(self.enc_curr[2] - self.enc_prev[2]) / 4 / (7 * 27) * (2 * pi)
+        theta_l = -float(self.enc_curr[0] - self.enc_prev[0]) / 4 / (7 * 27) * (2 * pi)
+        theta_b = -float(self.enc_curr[1] - self.enc_prev[1]) / 4 / (7 * 27) * (2 * pi)
+        theta_r = -float(self.enc_curr[2] - self.enc_prev[2]) / 4 / (7 * 27) * (2 * pi)
 
 
         # v_linear = omega * d / 2

@@ -163,7 +163,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
  install(PROGRAMS
    scripts/vel_command_publisher.py
-   scripts/distance_test.py
+   scripts/gps_publisher.py
    resource/gui/pos_cmd_gui.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
@@ -201,6 +201,5 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
 
 set(CMAKE_AUTOUIC ON)

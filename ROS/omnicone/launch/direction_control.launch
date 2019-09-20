@@ -18,6 +18,10 @@
 
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher" output="screen"/>
 
+<node name="gps_publisher" pkg="omnicone" type="gps_publisher.py" output="screen"/>
+
 <node name="pos_cmd" pkg="omnicone" type="pos_cmd_gui.py" output="screen"/>
+
+<!-- <node name="camera_preview" pkg="omnicone" type="camera_preview.py" if="$(arg camera_preview)"/> -->
 
 </launch>
