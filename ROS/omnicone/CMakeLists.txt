@@ -164,6 +164,7 @@ include_directories(
  install(PROGRAMS
    scripts/vel_command_publisher.py
    scripts/gps_publisher.py
+   scripts/linear_test.py
    resource/gui/pos_cmd_gui.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )

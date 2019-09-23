@@ -256,39 +256,55 @@ class Roboteq:
 
     def execute_configuration_command(self, command):
         with self._serial_lock:
-            command_str = u'^{}\r'.format(command)
-            rospy.logdebug('>> {}'.format(command_str))
-            self._sio.write(command_str)
-            response_str = self._sio.readline()
-            rospy.logdebug('<< {}'.format(response_str))
-            return response_str
+            try:
+                command_str = u'^{}\r'.format(command)
+                rospy.logdebug('>> {}'.format(command_str))
+                self._sio.write(command_str)
+                response_str = self._sio.readline()
+                rospy.logdebug('<< {}'.format(response_str))
+                return response_str
+            except:
+                print "Serial Exception"
+                return ""
 
     def execute_maintenance_command(self, command):
         with self._serial_lock:
-            command_str = u'%{}\r'.format(command)
-            rospy.logdebug('>> {}'.format(command_str))
-            self._sio.write(command_str)
-            response_str = self._sio.readline()
-            rospy.logdebug('<< {}'.format(response_str))
-            return response_str
+            try:
+                command_str = u'%{}\r'.format(command)
+                rospy.logdebug('>> {}'.format(command_str))
+                self._sio.write(command_str)
+                response_str = self._sio.readline()
+                rospy.logdebug('<< {}'.format(response_str))
+                return response_str
+            except:
+                print "Serial Exception"
+                return ""
 
     def execute_runtime_command(self, command):
         with self._serial_lock:
-            command_str = u'!{}\r'.format(command)
-            rospy.logdebug('>> {}'.format(command_str))
-            self._sio.write(command_str)
-            response_str = self._sio.readline()
-            rospy.logdebug('<< {}'.format(response_str))
-            return response_str
+            try:
+                command_str = u'!{}\r'.format(command)
+                rospy.logdebug('>> {}'.format(command_str))
+                self._sio.write(command_str)
+                response_str = self._sio.readline()
+                rospy.logdebug('<< {}'.format(response_str))
+                return response_str
+            except:
+                print "Serial Exception"
+                return ""
 
     def execute_query(self, query):
         with self._serial_lock:
-            query_str = u'?{}\r'.format(query)
-            rospy.logdebug('>> {}'.format(query_str))
-            self._sio.write(query_str)
-            response_str = self._sio.readline()
-            rospy.logdebug('<< {}'.format(response_str))
-            return response_str
+            try:
+                query_str = u'?{}\r'.format(query)
+                rospy.logdebug('>> {}'.format(query_str))
+                self._sio.write(query_str)
+                response_str = self._sio.readline()
+                rospy.logdebug('<< {}'.format(response_str))
+                return response_str
+            except:
+                print "Serial Exception"
+                return ""
 
     def run(self):
         rate = rospy.Rate(50)
