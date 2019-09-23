@@ -19,16 +19,18 @@ distance = 10 # meters
 time = distance / linear_speed                         # seconds
 rate = rospy.Rate(10)
 
-for i in range(0,1):
+for i in range(0,5):
     start_time = rospy.get_rostime()
 
     while (True):
+        # Go Forward
         if (rospy.get_rostime() - start_time > rospy.Duration.from_sec(5.0) and
         rospy.get_rostime() - start_time < rospy.Duration.from_sec(5.0 + time)):
             msg.x = 0.0
             msg.y = 1.0 * linear_speed
             msg.theta = 0.0
 
+        # Go Backward
         elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(10.0 + time) and
         rospy.get_rostime() - start_time < rospy.Duration.from_sec(10.0 + 2.0*time)):
             msg.x = 0.0

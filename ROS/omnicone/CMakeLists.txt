@@ -165,6 +165,8 @@ include_directories(
    scripts/vel_command_publisher.py
    scripts/gps_publisher.py
    scripts/linear_test.py
+   scripts/rect_test_cw.py
+   scripts/rect_test_ccw.py
    resource/gui/pos_cmd_gui.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
