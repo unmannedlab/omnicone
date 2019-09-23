@@ -21,7 +21,7 @@ fwd_time = fwd_distance / linear_speed  # seconds
 sde_time = sde_distance / linear_speed  # seconds
 rate = rospy.Rate(10)
 
-for i in range(0,1):
+for i in range(0,5):
     start_time = rospy.get_rostime()
 
     while (True):
