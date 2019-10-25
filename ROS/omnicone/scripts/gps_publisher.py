@@ -26,7 +26,7 @@ class  gps_node:
 
         exit_flag = False
         while not exit_flag:
-            for port in ["/dev/ttyACM0","/dev/ttyACM1","/dev/ttyACM2","/dev/ttyACM3"]:
+            for port in ["/dev/ttyACM0","/dev/ttyACM1","/dev/ttyACM2"]:
                 try:
                     self.serial_port = serial.Serial(port, baudrate=115200, timeout=3)
                     self.NMEA_str = self.serial_port.readline()
@@ -44,8 +44,10 @@ class  gps_node:
             if self.NMEA_str.find('GGA') > 0:
 
                 msg = pynmea2.parse(self.NMEA_str)
+
                 lat_flt = ddmmstr_2_degflt(msg.lat)
                 lon_flt = ddmmstr_2_degflt(msg.lon)
+
                 alt_flt = float(msg.altitude)
 
                 if msg.lat_dir == 'S':
@@ -56,6 +58,7 @@ class  gps_node:
                 self.msg = Vector3(lat_flt, lon_flt, alt_flt)
 
             else:
+
                 self.msg = None
 
         except pynmea2.nmea.ParseError:
@@ -73,8 +76,8 @@ class  gps_node:
         while(not rospy.is_shutdown()):
             try:
                 self.NMEA_str = self.serial_port.readline()
-
                 if self.NMEA_str != None:
+                    print self.NMEA_str
                     self.ParseGPS()
 
                     if self.msg != None:

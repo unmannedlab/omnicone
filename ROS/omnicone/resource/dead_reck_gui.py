@@ -14,8 +14,8 @@ class OmniGui(QObject):
     def __init__(self):
         super(OmniGui, self).__init__()
 
-        rospy.init_node('pos_cmd', disable_signals=True)
-        self.pub = rospy.Publisher('robot_pos_goal', Pose2D, queue_size=10)
+        rospy.init_node('gui_cmd', disable_signals=True)
+        self.pub = rospy.Publisher('robot_vel_goal', Pose2D, queue_size=10)
 
         self.app = QtWidgets.QApplication(sys.argv)
 
@@ -23,6 +23,10 @@ class OmniGui(QObject):
         self.window = uic.loadUi(rospack.get_path('omnicone') + '/resource/cmd_gui.ui')
 
         self.reset_program()
+
+        self.rpm = 50.0                                         # rev / minute
+        self.circumference = 3.14159 * 0.101                    # meters
+        self.linear_speed = self.rpm / 60 * self.circumference  # m/s
 
         self.window.pushButton_0.released.connect(self.setDistance)
         self.window.pushButton_1.released.connect(self.setDistance)
@@ -37,7 +41,7 @@ class OmniGui(QObject):
         self.window.pushButton_pt.released.connect(self.setDecimal)
         self.window.pushButton_pm.released.connect(self.switchSign)
 
-        self.window.pushButton_start.released.connect(self.run)
+        self.window.pushButton_start.released.connect(self.move)
         self.window.pushButton_reset.released.connect(self.reset_program)
         self.window.pushButton_end.released.connect(self.end_program)
 
@@ -80,17 +84,29 @@ class OmniGui(QObject):
             self.updateY()
 
 
-    def run(self):
+    def move(self):
+        start_time = rospy.get_rostime()
+        msg = Pose2D()
+
+        distance = (self.currentX ** 2 + self.currentY ** 2) ** 0.5 # meters
+
+        time = distance / self.linear_speed                         # seconds
 
         rate = rospy.Rate(10)
-        msg = Pose2D()
         self.run_switch = True
         while (self.run_switch):
             self.app.processEvents()
-
-            msg.x = self.currentX
-            msg.y = self.currentY
-            msg.theta = 0.0
+            if (rospy.get_rostime() - start_time > rospy.Duration.from_sec(1.0) and
+            rospy.get_rostime() - start_time < rospy.Duration.from_sec(1.0 + time)):
+                msg.x = self.linear_speed * self.X_sign * self.currentX / distance
+                msg.y = self.linear_speed * self.Y_sign * self.currentY / distance
+                msg.theta = 0.0
+            elif (rospy.get_rostime() - start_time > rospy.Duration.from_sec(2.0 + time)):
+                break
+            else:
+                msg.x = 0.0
+                msg.y = 0.0
+                msg.theta = 0.0
 
             self.pub.publish(msg)
             rate.sleep()

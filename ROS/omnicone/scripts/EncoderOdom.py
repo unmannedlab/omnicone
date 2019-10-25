@@ -4,12 +4,12 @@ import rospy
 import open_base
 import math
 from std_msgs.msg import Float32, Float64, Int32
-from geometry_msgs.msg import Pose2D, Point
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose2D, PoseWithCovariance, TwistWithCovariance
 
 from math import pi
-from open_base.srv import KinematicsInverse, KinematicsForward
 
-class VelCommander:
+class EncoderOdom:
 
     def __init__(self):
         # Velocity Commander Initialization
@@ -18,20 +18,12 @@ class VelCommander:
         #     subscribers, and publishers. Additionally, the parameters and
         #     persistent variables are set/initialized to zero.
 
-        rospy.init_node('vel_command_publisher')
+        rospy.init_node('EncoderOdom')
 
         # Paramters
         self.circumference = pi * 0.101                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 1.0                          # sec
-
-        # create the publisher for each individual
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
-
-        # create the subscriber for the goal velocity
-        self.vel_goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
 
         # create the subscriber for the encoder_pulses_per_revolution
         self.left_enc_sub  = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
@@ -39,19 +31,31 @@ class VelCommander:
         self.right_enc_sub = rospy.Subscriber('/right_joint_velocity_controller/absolute_encoder_count', Int32, self.updatePos)
 
         # create publisher for position estimate
-        # self.pos_pub = rospy.Publisher('pos_estimate',Pose2D, queue_size=10)
-
-        # create the caller to the inverse kinematics server
-        self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
+        self.odom_pub = rospy.Publisher('EncoderOdom/Odometry', Odometry, queue_size=10)
+        self.pose_pub = rospy.Publisher('EncoderOdom/Pose', PoseWithCovariance, queue_size=10)
+        self.twst_pub = rospy.Publisher('EncoderOdom/Twist', TwistWithCovariance, queue_size=10)
 
         # set/initialize persistent variables
         self.enc_init = [False, False, False]
         self.enc_prev = [0.0, 0.0, 0.0]
         self.enc_curr = [0.0, 0.0, 0.0]
-        self.cmd_vel  = [0.0, 0.0, 0.0]
-        self.last_command = rospy.get_time()
         self.d_pos_est = Pose2D(0,0,0)
 
+        self.odom = Odometry()
+
+        self.odom.pose.covariance = [   0.01, 0, 0, 0, 0, 0, \
+                                        0, 0.01, 0, 0, 0, 0, \
+                                        0, 0, 0.01, 0, 0, 0, \
+                                        0, 0, 0, 0.01, 0, 0, \
+                                        0, 0, 0, 0, 0.01, 0, \
+                                        0, 0, 0, 0, 0, 0.01  ]
+
+        self.odom.twist.covariance = [  0.01, 0, 0, 0, 0, 0, \
+                                        0, 0.01, 0, 0, 0, 0, \
+                                        0, 0, 0.01, 0, 0, 0, \
+                                        0, 0, 0, 0.01, 0, 0, \
+                                        0, 0, 0, 0, 0.01, 0, \
+                                        0, 0, 0, 0, 0, 0.01  ]
 
     def updateEnc_left(self, msg):
         # Left Motor Encoder Callback
@@ -75,14 +79,6 @@ class VelCommander:
             self.enc_prev[1] = self.enc_curr[1]
             self.enc_init[1] = True
 
-    def updateVels(self, goal):
-        resp = self.ik_service_client(goal)
-
-        self.cmd_vel[0] = -resp.output.v_left  * self.linear_to_rot
-        self.cmd_vel[1] = -resp.output.v_back  * self.linear_to_rot
-        self.cmd_vel[2] = -resp.output.v_right * self.linear_to_rot
-
-        self.last_command = rospy.get_time()
 
     def updatePos(self, msg):
         # Right Motor Encoder Callback
@@ -96,6 +92,9 @@ class VelCommander:
         if not self.enc_init[2]:
             self.enc_prev[2] = self.enc_curr[2]
             self.enc_init[2] = True
+            self.time_prev = rospy.get_time()
+
+        self.time_curr = rospy.get_time()
 
         # num encoder counts / (4 counts / cycle ) / ( 7 * 27 cycles / rev) (2pi rad / rev)
         theta_l = -float(self.enc_curr[0] - self.enc_prev[0]) / 4 / (7 * 27) * (2 * pi)
@@ -122,25 +121,37 @@ class VelCommander:
         self.enc_prev[1] = self.enc_curr[1]
         self.enc_prev[2] = self.enc_curr[2]
 
-        self.d_pos_est.x     = delta_x_w + self.d_pos_est.x
-        self.d_pos_est.y     = delta_y_w + self.d_pos_est.y
         self.d_pos_est.theta = delta_w + self.d_pos_est.theta
 
+        self.odom.pose.pose.position.x = delta_x_w + self.odom.pose.pose.position.x
+        self.odom.pose.pose.position.y = delta_y_w + self.odom.pose.pose.position.y
+        self.odom.pose.pose.position.z = 0
+        self.odom.pose.pose.orientation.x = 0
+        self.odom.pose.pose.orientation.y = 0
+        self.odom.pose.pose.orientation.z = math.sin(self.d_pos_est.theta/2)
+        self.odom.pose.pose.orientation.w = math.cos(self.d_pos_est.theta/2)
+
+        self.odom.twist.twist.linear.x = delta_x_w / (self.time_curr - self.time_prev)
+        self.odom.twist.twist.linear.y = delta_y_w / (self.time_curr - self.time_prev)
+        self.odom.twist.twist.linear.z = 0
+        self.odom.twist.twist.angular.x = 0
+        self.odom.twist.twist.angular.y = 0
+        self.odom.twist.twist.angular.z = delta_w / (self.time_curr - self.time_prev)
+
+        self.time_curr = self.time_prev
 
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
 
         while(not rospy.is_shutdown()):
-            if ( rospy.get_time() - self.last_command > self.command_timeout):
-                self.cmd_vel = [0.0, 0.0, 0.0]
 
-            self.left_pub.publish( self.cmd_vel[0])
-            self.back_pub.publish( self.cmd_vel[1])
-            self.right_pub.publish(self.cmd_vel[2])
-            # self.pos_pub.publish(self.d_pos_est)
+            self.odom_pub.publish( self.odom )
+            self.pose_pub.publish( self.odom.pose )
+            self.twst_pub.publish( self.odom.twist )
+
             rate.sleep()
 
 
 if __name__ == '__main__':
-    vel_command_pub = VelCommander()
-    vel_command_pub.run()
+    EncoderOdom = EncoderOdom()
+    EncoderOdom.run()

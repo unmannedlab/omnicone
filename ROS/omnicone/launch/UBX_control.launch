@@ -18,12 +18,9 @@
 
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher" output="screen"/>
 
-<node name="gps_publisher" pkg="omnicone" type="gps_publisher.py" output="screen"/>
+<node name="ubx_cmd" pkg="omnicone" type="UBX_cmd.py" output="screen"/>
 
-<node name="pos_cmd" pkg="omnicone" type="rect_test_ccw.py" output="screen"/>
+<node name="ubx_gui" pkg="omnicone" type="UBX_gui.py" output="screen"/>
 
-<node pkg="rosbag" type="record" name="robot_bag" args="-o /home/jacob/RectTestCCW /gps_pub /pos_estimate /robot_vel_goal" />
-
-<!-- <node name="camera_preview" pkg="omnicone" type="camera_preview.py" if="$(arg camera_previ ew)"/> -->
 
 </launch>
