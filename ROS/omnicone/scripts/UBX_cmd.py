@@ -22,7 +22,7 @@ class UBXCommander:
         self.circumference = pi * 0.101                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 1.0                          # sec
-        self.rpm = 50.0                                         # rev / minute
+        self.rpm = 25.0                                         # rev / minute
         self.circumference = 3.14159 * 0.101                    # meters
         self.linear_speed = self.rpm / 60 * self.circumference  # m/s
 
@@ -68,12 +68,13 @@ class UBXCommander:
         dlat =  30.6200939 - self.lat               # degrees
         dE = R * math.radians(dlon) - self.Xset     # meters
         dN = R * math.radians(dlat) - self.Yset     # meters
+        dT = (180 - self.hdg)
 
         distance = ( dE ** 2 + dN ** 2) ** 0.5      # meters
 
-        self.cmd_vel.x = dE / max(distance,1) * self.linear_speed
-        self.cmd_vel.y = dN / max(distance,1) * self.linear_speed
-        self.cmd_vel.theta  = (180 - self.hdg) / max(abs(self.hdg),20) * 2
+        self.cmd_vel.x = (dE * math.cos(dT) - dN * math.sin(dT)) / max(distance,1) * self.linear_speed
+        self.cmd_vel.y = (dE * math.sin(dT) + dN * math.cos(dT)) / max(distance,1) * self.linear_speed
+        self.cmd_vel.theta  = dT / max(abs(dT),20) * self.linear_speed / 3
 
 
     def run(self):
