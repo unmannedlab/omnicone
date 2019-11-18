@@ -12,7 +12,7 @@ from open_base.srv import KinematicsInverse, KinematicsForward
 import serial
 
 
-class UBXCommander:
+class UBXCommander:.
 
     def __init__(self):
 

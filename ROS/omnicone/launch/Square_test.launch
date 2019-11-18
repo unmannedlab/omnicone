@@ -20,7 +20,7 @@
 
 <node name="ubx_cmd" pkg="omnicone" type="UBX_cmd.py" output="screen"/>
 
-<node name="ubx_gui" pkg="omnicone" type="UBX_gui.py" output="screen"/>
+<node name="gui_cmd" pkg="omnicone" type="SquareTest.py" output="screen"/>
 
 <node name="UBX" pkg="omnicone" type="UBX_publisher.py" output="screen"/>
 

@@ -12,11 +12,6 @@ from math import pi
 class EncoderOdom:
 
     def __init__(self):
-        # Velocity Commander Initialization
-        # Description:
-        #     Function initializes the velocity commander by creating the node,
-        #     subscribers, and publishers. Additionally, the parameters and
-        #     persistent variables are set/initialized to zero.
 
         rospy.init_node('EncoderOdom')
 
@@ -43,19 +38,19 @@ class EncoderOdom:
 
         self.odom = Odometry()
 
-        self.odom.pose.covariance = [   0.01, 0, 0, 0, 0, 0, \
-                                        0, 0.01, 0, 0, 0, 0, \
-                                        0, 0, 0.01, 0, 0, 0, \
-                                        0, 0, 0, 0.01, 0, 0, \
-                                        0, 0, 0, 0, 0.01, 0, \
-                                        0, 0, 0, 0, 0, 0.01  ]
+        self.odom.pose.covariance = [   0.001,  0,      0,      0,      0,      0, \
+                                        0,      0.001,  0,      0,      0,      0, \
+                                        0,      0,      0.001,  0,      0,      0, \
+                                        0,      0,      0,      0.001,  0,      0, \
+                                        0,      0,      0,      0,      0.001,  0, \
+                                        0,      0,      0,      0,      0,      0.001  ]
 
-        self.odom.twist.covariance = [  0.01, 0, 0, 0, 0, 0, \
-                                        0, 0.01, 0, 0, 0, 0, \
-                                        0, 0, 0.01, 0, 0, 0, \
-                                        0, 0, 0, 0.01, 0, 0, \
-                                        0, 0, 0, 0, 0.01, 0, \
-                                        0, 0, 0, 0, 0, 0.01  ]
+        self.odom.twist.covariance = [  0.001,  0,      0,      0,      0,      0, \
+                                        0,      0.001,  0,      0,      0,      0, \
+                                        0,      0,      0.001,  0,      0,      0, \
+                                        0,      0,      0,      0.001,  0,      0, \
+                                        0,      0,      0,      0,      0.001,  0, \
+                                        0,      0,      0,      0,      0,      0.001  ]
 
     def updateEnc_left(self, msg):
         # Left Motor Encoder Callback
@@ -100,7 +95,6 @@ class EncoderOdom:
         theta_l = -float(self.enc_curr[0] - self.enc_prev[0]) / 4 / (7 * 27) * (2 * pi)
         theta_b = -float(self.enc_curr[1] - self.enc_prev[1]) / 4 / (7 * 27) * (2 * pi)
         theta_r = -float(self.enc_curr[2] - self.enc_prev[2]) / 4 / (7 * 27) * (2 * pi)
-
 
         # v_linear = omega * d / 2
         D1 = theta_l * 0.101 / 2
