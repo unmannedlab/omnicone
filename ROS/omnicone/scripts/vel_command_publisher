@@ -33,49 +33,21 @@ class VelCommander:
         # create the subscriber for the goal velocity
         self.vel_goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
 
-        # create the subscriber for the encoder_pulses_per_revolution
-        self.left_enc_sub  = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
-        self.back_enc_sub  = rospy.Subscriber( '/back_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_back)
-        self.right_enc_sub = rospy.Subscriber('/right_joint_velocity_controller/absolute_encoder_count', Int32, self.updatePos)
-
-        # create publisher for position estimate
-        # self.pos_pub = rospy.Publisher('pos_estimate',Pose2D, queue_size=10)
-
         # create the caller to the inverse kinematics server
         self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
 
-        # set/initialize persistent variables
-        self.enc_init = [False, False, False]
-        self.enc_prev = [0.0, 0.0, 0.0]
-        self.enc_curr = [0.0, 0.0, 0.0]
+        # initialize persistent variables
         self.cmd_vel  = [0.0, 0.0, 0.0]
         self.last_command = rospy.get_time()
-        self.d_pos_est = Pose2D(0,0,0)
 
-
-    def updateEnc_left(self, msg):
-        # Left Motor Encoder Callback
-        # Description
-        #     Function updates the internal memory of the left encoder counter.
-        #     If the variable has not been initialized, the first value is assigned
-        #     to both the previous and current encoder value.
-        self.enc_curr[0] = msg.data
-        if not self.enc_init[0]:
-            self.enc_prev[0] = self.enc_curr[0]
-            self.enc_init[0] = True
-
-    def updateEnc_back(self, msg):
-        # Back Motor Encoder Callback
-        # Description
-        #     Function updates the internal memory of the back encoder counter.
-        #     If the variable has not been initialized, the first value is assigned
-        #     to both the previous and current encoder value.
-        self.enc_curr[1] = msg.data
-        if not self.enc_init[1]:
-            self.enc_prev[1] = self.enc_curr[1]
-            self.enc_init[1] = True
 
     def updateVels(self, goal):
+        # Goal Velocity Subscriber
+        # Description:
+        #     Function translates local velocity goal into individual motor
+        #     velocities using the inverse kinematics service from open_base.
+        #     These velocities are then published to each motor command topic.
+
         resp = self.ik_service_client(goal)
 
         self.cmd_vel[0] = -resp.output.v_left  * self.linear_to_rot
@@ -84,50 +56,14 @@ class VelCommander:
 
         self.last_command = rospy.get_time()
 
-    def updatePos(self, msg):
-        # Right Motor Encoder Callback
-        # Description
-        #     Function updates the internal memory of the right encoder counter.
-        #     If the variable has not been initialized, the first value is assigned
-        #     to both the previous and current encoder value. Additionally,
-        #     function integrates the wheel rotations and uses the omni FK to
-        #     estimate a change in position since the start of the program.
-        self.enc_curr[2] = msg.data
-        if not self.enc_init[2]:
-            self.enc_prev[2] = self.enc_curr[2]
-            self.enc_init[2] = True
-
-        # num encoder counts / (4 counts / cycle ) / ( 7 * 27 cycles / rev) (2pi rad / rev)
-        theta_l = -float(self.enc_curr[0] - self.enc_prev[0]) / 4 / (7 * 27) * (2 * pi)
-        theta_b = -float(self.enc_curr[1] - self.enc_prev[1]) / 4 / (7 * 27) * (2 * pi)
-        theta_r = -float(self.enc_curr[2] - self.enc_prev[2]) / 4 / (7 * 27) * (2 * pi)
-
-
-        # v_linear = omega * d / 2
-        D1 = theta_l * 0.101 / 2
-        D2 = theta_b * 0.101 / 2
-        D3 = theta_r * 0.101 / 2
-
-        # Standard transformation from
-        delta_x = (2*D2 - D1 - D3) / 3
-        delta_y = math.sqrt(3) * (D3 - D1) / 3
-        delta_w = (D1 + D2 + D3)/(3 * 0.1905)
-
-        # Rotation to World Frame
-        delta_x_w = delta_x*math.cos(delta_w/2 + self.d_pos_est.theta) - delta_y*math.sin(delta_w/2 + self.d_pos_est.theta)
-        delta_y_w = delta_x*math.sin(delta_w/2 + self.d_pos_est.theta) + delta_y*math.cos(delta_w/2 + self.d_pos_est.theta)
-
-        # Element-wise assign or else assigned by reference (very bad)
-        self.enc_prev[0] = self.enc_curr[0]
-        self.enc_prev[1] = self.enc_curr[1]
-        self.enc_prev[2] = self.enc_curr[2]
-
-        self.d_pos_est.x     = delta_x_w + self.d_pos_est.x
-        self.d_pos_est.y     = delta_y_w + self.d_pos_est.y
-        self.d_pos_est.theta = delta_w + self.d_pos_est.theta
-
 
     def run(self):
+        # Velocity Command Publisher
+        # Description:
+        #     Publishes calculated goal motor velocities based on last given
+        #     local velocity goal. Publishes independent of updates unless
+        #     command timeout is reached.
+
         rate = rospy.Rate(10) # 10 Hz
 
         while(not rospy.is_shutdown()):
@@ -137,7 +73,6 @@ class VelCommander:
             self.left_pub.publish( self.cmd_vel[0])
             self.back_pub.publish( self.cmd_vel[1])
             self.right_pub.publish(self.cmd_vel[2])
-            # self.pos_pub.publish(self.d_pos_est)
             rate.sleep()
 
 
