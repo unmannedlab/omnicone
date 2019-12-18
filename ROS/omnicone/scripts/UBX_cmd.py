@@ -72,18 +72,13 @@ class UBXCommander:
         dlat = self.lat_home - self.lat             # degrees
         dE = R * math.radians(dlon) - self.Xset     # meters
         dN = R * math.radians(dlat) - self.Yset     # meters
-        dT = 0 # (180 - self.hdg)
-
-        print (dE)
-        print (dN)
-        print (dT)
-        print ("")
+        dT = (180 - self.hdg)                       # degrees
 
         distance = ( dE ** 2 + dN ** 2) ** 0.5      # meters
 
         self.cmd_vel.x = -(dE * math.cos(dT) - dN * math.sin(dT)) / max(distance,1) * self.linear_speed
         self.cmd_vel.y = -(dE * math.sin(dT) + dN * math.cos(dT)) / max(distance,1) * self.linear_speed
-        # self.cmd_vel.theta  = dT / max(abs(dT),20) * self.linear_speed / 3
+        self.cmd_vel.theta  = dT / max(abs(dT),20) * self.linear_speed / 3
 
 
     def run(self):
