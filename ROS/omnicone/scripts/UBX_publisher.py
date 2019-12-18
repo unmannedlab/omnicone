@@ -58,8 +58,8 @@ class UBXNode:
                     self.hpposllh_llh.y     = float(msg[2][3])*1e-7
                     self.hpposllh_llh.z     = float(msg[2][4])*1e-3
 
-                    self.hpposllh_err.x     = float(msg[2][10])*1e-7
-                    self.hpposllh_err.y     = float(msg[2][10])*1e-7
+                    self.hpposllh_err.x     = float(msg[2][10])*1e-4
+                    self.hpposllh_err.y     = float(msg[2][10])*1e-4
                     self.hpposllh_err.z     = float(msg[2][11])*1e-4
 
                     self.hpposllh_llh_pub.publish( self.hpposllh_llh )
