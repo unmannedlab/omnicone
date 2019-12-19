@@ -1,73 +1,87 @@
 #!/usr/bin/env python
 
 import rospy
-import open_base
 import math
-from std_msgs.msg import Float64
-from geometry_msgs.msg import Pose2D
+import open_base
+# from std_msgs.msg import Float64
+from geometry_msgs.msg import Twist, Pose2D
+from nav_msgs.msg import Path
 
 from math import pi
-from open_base.srv import KinematicsInverse, KinematicsForward
+from open_base.srv import KinematicsInverse
 
-class VelCommander:
+
+class Kinematic_Controller:
 
     def __init__(self):
-        # Velocity Commander Initialization
+        # Title
         # Description:
-        #     Function initializes the velocity commander by creating the node,
-        #     subscribers, and publishers. Additionally, the parameters and
-        #     persistent variables are set/initialized to zero.
+        #     Function does
 
-        rospy.init_node('vel_command_publisher')
+        rospy.init_node('Kinematic_Controller')
 
         # Paramters
         self.circumference = pi * 0.101                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 1.0                          # sec
 
-        # create the publisher for each individual motor velocity
+        # create the publishers
         self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
         self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
         self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
 
-        # create the subscriber for the goal velocity
-        self.vel_goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
+        # create the subscriber
+        self.state_sub = rospy.Subscriber('/EKF/state', Twist, self.updateVels)
+        self.path_sub  = rospy.Subscriber('Waypoints',  Path,  self.updatePath)
+
 
         # create the caller to the inverse kinematics server
         self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
 
         # initialize persistent variables
         self.cmd_vel  = [0.0, 0.0, 0.0]
-        self.last_command = rospy.get_time()
+        self.last_cmd_time = rospy.get_time()
+        self.Waypoints = Path()
 
 
-    def updateVels(self, goal):
-        # Goal Velocity Subscriber
+    def updatePath(self, msg):
+        # Title
         # Description:
-        #     Function translates local velocity goal into individual motor
-        #     velocities using the inverse kinematics service from open_base.
-        #     These velocities are then published to each motor command topic.
+        #     Function does
 
+        self.Waypoints = msg
+
+
+    def updateVels(self, msg):
+        # Title
+        # Description:
+        #     Function does
+
+        # Look for closest point and update global velocity goal
+        for i in self.Waypoints
+            pass
+
+        Vx = 0
+        Vy = 0
+
+        goal = Pose2D(Vx,Vy,0)
         resp = self.ik_service_client(goal)
 
         self.cmd_vel[0] = -resp.output.v_left  * self.linear_to_rot
         self.cmd_vel[1] = -resp.output.v_back  * self.linear_to_rot
         self.cmd_vel[2] = -resp.output.v_right * self.linear_to_rot
 
-        self.last_command = rospy.get_time()
-
+        self.last_cmd_time = rospy.get_time()
 
     def run(self):
-        # Velocity Command Publisher
+        # Title
         # Description:
-        #     Publishes calculated goal motor velocities based on last given
-        #     local velocity goal. Publishes independent of updates unless
-        #     command timeout is reached.
+        #     Function does
 
-        rate = rospy.Rate(10) # 10 Hz
+        rate = rospy.Rate(1) # 1 Hz
 
         while(not rospy.is_shutdown()):
-            if ( rospy.get_time() - self.last_command > self.command_timeout):
+            if ( rospy.get_time() - self.last_cmd_time > self.command_timeout):
                 self.cmd_vel = [0.0, 0.0, 0.0]
 
             self.left_pub.publish( self.cmd_vel[0])
@@ -77,5 +91,5 @@ class VelCommander:
 
 
 if __name__ == '__main__':
-    vel_command_pub = VelCommander()
-    vel_command_pub.run()
+    K_Control = Kinematic_Controller()
+    K_Control.run()
