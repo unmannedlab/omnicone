@@ -4,30 +4,26 @@ import rospy
 import math
 import open_base
 # from std_msgs.msg import Float64
-from geometry_msgs.msg import Twist, Pose2D
+from geometry_msgs.msg import Twist, Pose2D, PoseStamped
 from nav_msgs.msg import Path
 
 from math import pi
-from open_base.srv import KinematicsInverse
 
 
-class Kinematic_Controller:
+class Waypoint_Publisher:
 
-    def __init__(self):
+    def __init__(self, filename):
         # Title
         # Description:
         #     Function does
 
         rospy.init_node('Kinematic_Controller')
 
-        # create the publishers
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
+        # create the publisher
+        self.path_pub  = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
 
-        # create the caller to the inverse kinematics server
-        self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
-
-        filepath = rospy.get_param('/WaypointFilePath')
-        self.LoadWaypoints("SquarePath.csv")
+        # filename = rospy.get_param('/WaypointFilePath')
+        self.LoadWaypoints(filename)
 
 
     def LoadWaypoints(self, filename):
@@ -36,9 +32,9 @@ class Kinematic_Controller:
         #     Function does
         #     Appropriated from Amir Darwesh (2019)
 
-        waypointPath = Path()
-        waypointPath.header.stamp = rospy.Time.now()
-        waypointPath.header.frame_id = "world"
+        self.waypoints = Path()
+        self.waypoints.header.stamp = rospy.Time.now()
+        self.waypoints.header.frame_id = "world"
         cx,cy = [], []
         with open(filename) as f:
             for line in f:
@@ -60,7 +56,7 @@ class Kinematic_Controller:
             cpose.pose.orientation.y = 0
             cpose.pose.orientation.z = 0
             cpose.pose.orientation.w = 1
-            waypointPath.poses.append(cpose)
+            self.waypoints.poses.append(cpose)
 
     def run(self):
         # Title
@@ -71,10 +67,10 @@ class Kinematic_Controller:
 
         while(not rospy.is_shutdown()):
 
-            self.right_pub.publish(self.waypoints)
+            self.path_pub.publish(self.waypoints)
             rate.sleep()
 
 
 if __name__ == '__main__':
-    K_Control = Kinematic_Controller()
-    K_Control.run()
+    WayPub = Waypoint_Publisher("SquarePath.csv")
+    WayPub.run()

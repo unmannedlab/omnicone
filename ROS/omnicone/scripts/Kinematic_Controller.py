@@ -58,8 +58,10 @@ class Kinematic_Controller:
         #     Function does
 
         # Look for closest point and update global velocity goal
-        for i in self.Waypoints
-            pass
+        min = 10^9
+        mindex = 0
+        for Waypoint in self.Waypoints:
+            if sqrt((Waypoint.pose.position.x - msg.linear.x)**2 + (Waypoint.pose.position.x - msg.linear.x)**2) < min
 
         Vx = 0
         Vy = 0
