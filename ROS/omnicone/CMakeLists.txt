@@ -167,6 +167,9 @@ include_directories(
    scripts/linear_test.py
    scripts/pos_cmd.py
    scripts/UBX_publisher.py
+   scripts/EKF.py
+   scripts/Kinematic_Controller.py
+   scripts/Waypoint.py
    resource/dead_reck_gui.py
    resource/UBX_gui.py
    resource/pos_cmd_gui.py
@@ -187,12 +190,12 @@ include_directories(
 #   PATTERN ".svn" EXCLUDE
 # )
 
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+# Mark other files for installation (e.g. launch and bag files, etc.)
+ install(FILES
+   scripts/SquarePath.csv
+   # myfile2
+   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+ )
 
 #############
 ## Testing ##

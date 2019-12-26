@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+import os 
 import rospy
+import rospkg
 import math
 import open_base
 # from std_msgs.msg import Float64
@@ -17,7 +19,7 @@ class Waypoint_Publisher:
         # Description:
         #     Function does
 
-        rospy.init_node('Kinematic_Controller')
+        rospy.init_node('Waypoint')
 
         # create the publisher
         self.path_pub  = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
@@ -36,9 +38,10 @@ class Waypoint_Publisher:
         self.waypoints.header.stamp = rospy.Time.now()
         self.waypoints.header.frame_id = "world"
         cx,cy = [], []
-        with open(filename) as f:
-            for line in f:
 
+        rospack = rospkg.RosPack()
+        with open( os.path.join(rospack.get_path('omnicone'),'scripts/SquarePath.csv') ) as f:
+            for line in f:
                 ry, rx = map(float,line.split(','))
                 cx.append(rx)
                 cy.append(ry)
