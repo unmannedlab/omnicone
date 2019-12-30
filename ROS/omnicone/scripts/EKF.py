@@ -216,10 +216,10 @@ class EKF_omnicone:
         # Ellipsoidal model calculation of Earth
         a = 6378137.0
         b = 6356752.3142
-        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(msg.y) ,2)+ \
-                        math.pow( math.pow(b,2) * math.sin(msg.y) ,2))/ \
-                       (math.pow( a * math.cos(msg.y) ,2)+ \
-                        math.pow( b * math.sin(msg.y) ,2))) + msg.z
+        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(msg.y*pi/180), 2)+ \
+                        math.pow( math.pow(b,2) * math.sin(msg.y*pi/180), 2))/ \
+                       (math.pow( a * math.cos(msg.y*pi/180), 2)+ \
+                        math.pow( b * math.sin(msg.y*pi/180), 2))) + msg.z
 
         # Transform LLH to 2D position
         dlon = self.lon_home - msg.x            # degrees
