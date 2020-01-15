@@ -222,8 +222,8 @@ class EKF_omnicone:
                         math.pow( b * math.sin(msg.y*pi/180), 2))) + msg.z
 
         # Transform LLH to 2D position
-        dlon = self.lon_home - msg.x            # degrees
-        dlat = self.lat_home - msg.y            # degrees
+        dlon = msg.x - self.lon_home            # degrees
+        dlat = msg.y - self.lat_home            # degrees
         dE = R * math.radians(dlon)             # meters
         dN = R * math.radians(dlat)             # meters
         dT = (180 - self.UBX_rel_pos[2])        # degrees
