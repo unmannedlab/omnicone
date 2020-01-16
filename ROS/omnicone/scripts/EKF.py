@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# TODO:
-    # Tune Covariance Matrix
-
-
 import rospy
 import open_base
 import math
@@ -49,7 +45,7 @@ class EKF_omnicone:
         self.UBX_rel_pos = [0.0, 0.0, 0.0]
         self.UBX_llh_llh = [0.0, 0.0, 0.0]
 
-        self.state = np.array([[0.0],[0.0],[0.0],[0.0],[0.0],[0.0]])
+        self.state = np.array([[0.0],[0.0],[180.0],[0.0],[0.0],[0.0]])
 
         self.Process_Q = np.array([ [ 4.74957585660, -0.0460417908,	-0.8333033435,	 0.0024956610,	 0.2439671528,	0.0667347090],\
                                     [-0.04604179080,  4.5408676761,	 0.8832843155,	-0.2447392906,	 0.2439671528,	0.1076589568],\
@@ -222,11 +218,11 @@ class EKF_omnicone:
                         math.pow( b * math.sin(msg.y*pi/180), 2))) + msg.z
 
         # Transform LLH to 2D position
-        dlon = msg.x - self.lon_home            # degrees
-        dlat = msg.y - self.lat_home            # degrees
-        dE = R * math.radians(dlon)             # meters
-        dN = R * math.radians(dlat)             # meters
-        dT = (180 - self.UBX_rel_pos[2])        # degrees
+        dlon = msg.x - self.lon_home    # degrees
+        dlat = msg.y - self.lat_home    # degrees
+        dE = R * math.radians(dlon)     # meters
+        dN = R * math.radians(dlat)     # meters
+        dT = self.UBX_rel_pos[2]        # degrees
 
         # Measurement in matrix format
         measurement = np.array([[dE],[dN],[dT]])

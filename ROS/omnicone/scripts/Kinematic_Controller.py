@@ -46,7 +46,7 @@ class Kinematic_Controller:
         self.path_index = -1
 
         # Kinematic Controller Values
-        self.K_err = 0.5
+        self.K_err = 1.0
         self.desired_speed = 0.5
 
 
@@ -67,22 +67,23 @@ class Kinematic_Controller:
         #     controlled to that section of the path. 
 
         # Look for closest point and update global velocity goal
-        dist_min = 10^9
+        dist_min = 10e9
 
         if self.path_index == -1:
             # If first search of path for closest pose, checks all path poses
             for i in range(len(self.Waypoints.poses)-1):
                 distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-                                     (self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2)
+                                     (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
                 if distance < dist_min:
                     dist_min = distance
                     self.path_index = i
+            
         else:
-            # Otherwise, only checks nearest 20 poses for closest path pose
-            for i in range(max(0,self.path_index-10), \
-                           min(self.path_index+10,len(self.Waypoints.poses)-1)):
+            # Otherwise, only checks nearest 50 poses for closest path pose
+            for i in range(max(0,self.path_index-25), \
+                           min(self.path_index+25,len(self.Waypoints.poses)-1)):
                 distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-                                     (self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2)
+                                     (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
                 if distance < dist_min:
                     dist_min = distance
                     self.path_index = i
