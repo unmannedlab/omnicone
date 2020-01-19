@@ -20,16 +20,16 @@ class EKF_omnicone:
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 1.0                          # sec
 
-        self.lon_home = -96.3560274
-        self.lat_home =  30.6220499
+        self.lon_home = -96.345611
+        self.lat_home =  30.6128444
 
 
         # create the subscriber for the encoder_pulses_per_revolution
         self.left_enc_sub  = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
         self.back_enc_sub  = rospy.Subscriber( '/back_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_back)
         self.right_enc_sub = rospy.Subscriber('/right_joint_velocity_controller/absolute_encoder_count', Int32, self.predict)
-        self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2d/err', Vector3 , self.update_relpos2d_err)
-        self.UBX_rel_err_sub = rospy.Subscriber('/UBX/relpos2d/pos', Vector3 , self.update_relpos2d_pos)
+        self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2D/err', Pose2D  , self.update_relpos2d_err)
+        self.UBX_rel_err_sub = rospy.Subscriber('/UBX/relpos2D/pos', Pose2D  , self.update_relpos2d_pos)
         self.UBX_llh_llh_sub = rospy.Subscriber('/UBX/hpposllh/err', Vector3 , self.update_hpposllh_err)
         self.UBX_llh_err_sub = rospy.Subscriber('/UBX/hpposllh/llh', Vector3 , self.update)
 
@@ -90,7 +90,7 @@ class EKF_omnicone:
         # Description:
         #     Function updates the theta component of the Observation Covariance
         #     Matrix [R]. This value is estimated by the UBX F9P module.
-        self.Observation_cov_R[2,2] = msg.z
+        self.Observation_cov_R[2,2] = msg.theta
 
 
     def update_relpos2d_pos(self, msg):
@@ -98,7 +98,7 @@ class EKF_omnicone:
         # Description:
         #     Function updates the theta component of the internal state for use
         #     in the Update() funtion
-        self.UBX_rel_pos[2] = msg.z
+        self.UBX_rel_pos[2] = msg.theta
 
 
     def update_hpposllh_err(self, msg):
@@ -174,7 +174,11 @@ class EKF_omnicone:
         delta_x = (2*D2 - D1 - D3) / 3
         delta_y = math.sqrt(3) * (D3 - D1) / 3
         delta_w = (D1 + D2 + D3)/(3 * 0.1905)
-
+	
+	print
+	print self.enc_prev, self.enc_curr
+	print delta_x, delta_y, delta_w
+	
         # Rotation to World Frame
         delta_x_w = -delta_x*math.cos(delta_w/2 + self.state[2]*pi/180) + \
                      delta_y*math.sin(delta_w/2 + self.state[2]*pi/180)
@@ -187,15 +191,16 @@ class EKF_omnicone:
         self.enc_prev[2] = self.enc_curr[2]
 
         # Predict Position States
-        self.state[0] = delta_x_w + self.state[0]
-        self.state[1] = delta_y_w + self.state[1]
-        self.state[2] = delta_w   + self.state[2]
+        self.state[0] = self.state[0] + delta_x_w  
+        self.state[1] = self.state[1] + delta_y_w 
+        self.state[2] = self.state[2] + delta_w   * 180 / pi
 
         # Predict Velocity States
         self.state[3] = delta_x_w / (self.time_curr - self.time_prev)
         self.state[4] = delta_y_w / (self.time_curr - self.time_prev)
-        self.state[5] = delta_w   / (self.time_curr - self.time_prev)
+        self.state[5] = delta_w   / (self.time_curr - self.time_prev) * 180 / pi
         
+	print self.state
         self.time_prev = self.time_curr
 
         # P_k|k-1 = F_k * P_k-1|k-1 * F_k^T + Q_k
