@@ -175,10 +175,6 @@ class EKF_omnicone:
         delta_y = math.sqrt(3) * (D3 - D1) / 3
         delta_w = (D1 + D2 + D3)/(3 * 0.1905)
 	
-	print
-	print self.enc_prev, self.enc_curr
-	print delta_x, delta_y, delta_w
-	
         # Rotation to World Frame
         delta_x_w = -delta_x*math.cos(delta_w/2 + self.state[2]*pi/180) + \
                      delta_y*math.sin(delta_w/2 + self.state[2]*pi/180)
@@ -200,7 +196,6 @@ class EKF_omnicone:
         self.state[4] = delta_y_w / (self.time_curr - self.time_prev)
         self.state[5] = delta_w   / (self.time_curr - self.time_prev) * 180 / pi
         
-	print self.state
         self.time_prev = self.time_curr
 
         # P_k|k-1 = F_k * P_k-1|k-1 * F_k^T + Q_k

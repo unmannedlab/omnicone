@@ -47,7 +47,7 @@ class Kinematic_Controller:
 
         # Kinematic Controller Values
         self.K_err = 1.0
-        self.desired_speed = 0.5
+        self.desired_speed = 0.15 # m/s
 
 
     def updatePath(self, msg):
@@ -98,6 +98,9 @@ class Kinematic_Controller:
         x2 = self.Waypoints.poses[self.path_index+1].pose.position.x
         y2 = self.Waypoints.poses[self.path_index+1].pose.position.y
 
+        dT = float(180 - msg.linear.z)                       # degrees
+        Vw = dT / max(abs(dT),20) * self.desired_speed * 2
+
         if self.path_index == len(self.Waypoints.poses)-2:
             # If closest to last point, control to final point and stop 
             dx_world = x2 - x0
@@ -106,18 +109,18 @@ class Kinematic_Controller:
             
             # Normalizes velocities to error from final point
             #   Ramps down speed when less than 1 m away
-            Vx = -(dx_world * math.cos(msg.linear.z*pi/180) -   \
-                   dy_world * math.sin(msg.linear.z*pi/180)) /  \
-                       max(distance,1) * self.desired_speed
+            Vx = -(dx_world * math.cos(math.radians(msg.linear.z)) -   \
+                   dy_world * math.sin(math.radians(msg.linear.z))) /  \
+                        max(distance,1) * self.desired_speed
 
-            Vy = -(dx_world * math.sin(msg.linear.z*pi/180) +   \
-                   dy_world * math.cos(msg.linear.z*pi/180)) /  \
-                       max(distance,1) * self.desired_speed
+            Vy = -(dx_world * math.sin(math.radians(msg.linear.z)) +   \
+                   dy_world * math.cos(math.radians(msg.linear.z))) /  \
+                        max(distance,1) * self.desired_speed
 
             # Transform to joint velocities using inverse kinematics
-            goal = Pose2D(Vx,Vy,0)
+            goal = Pose2D(Vx,Vy,Vw)
             resp = self.ik_service_client(goal)
-
+            
             # Convert to rotational speeds
             self.cmd_vel[0] = -resp.output.v_left  * self.linear_to_rot
             self.cmd_vel[1] = -resp.output.v_back  * self.linear_to_rot
@@ -154,13 +157,13 @@ class Kinematic_Controller:
             Vy_world = (Vy_path + Vy_err) / V_world * self.desired_speed
 
             # Transform global control velocity to local control velocity
-            Vx = -Vx_world * math.cos(msg.linear.z*pi/180) + \
-                  Vy_world * math.sin(msg.linear.z*pi/180)
-            Vy = -Vx_world * math.sin(msg.linear.z*pi/180) - \
-                  Vy_world * math.cos(msg.linear.z*pi/180)
-
+            Vx = -Vx_world * math.cos(math.radians(msg.linear.z)) + \
+                  Vy_world * math.sin(math.radians(msg.linear.z))
+            Vy = -Vx_world * math.sin(math.radians(msg.linear.z)) - \
+                  Vy_world * math.cos(math.radians(msg.linear.z))
+            
             # Transform to joint velocities using inverse kinematics
-            goal = Pose2D(Vx,Vy,0)
+            goal = Pose2D(Vx,Vy,Vw)
             resp = self.ik_service_client(goal)
 
             # Convert to rotational speeds

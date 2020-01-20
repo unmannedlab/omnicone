@@ -41,29 +41,42 @@ class UBXNode:
         while(not rospy.is_shutdown()):
             try:
                 msg = parser.receive_from(self.port)
+
                 if msg[1] == "RELPOSNED":
-                    self.relpos2D_pos.x     = float(msg[2][3])/100
-                    self.relpos2D_pos.y     = float(msg[2][4])/100
-                    self.relpos2D_pos.theta = float(msg[2][7])*1e-5
+                    if msg[2][17][7]:   # Is relative position heading valid? 
+                        self.relpos2D_pos.x     = float(msg[2][3])*1e-3
+                        self.relpos2D_pos.y     = float(msg[2][4])*1e-3
+                        self.relpos2D_pos.theta = float(msg[2][7])*1e-5
 
-                    self.relpos2D_err.x     = float(msg[2][12])*1e-4
-                    self.relpos2D_err.y     = float(msg[2][13])*1e-4
-                    self.relpos2D_err.theta = float(msg[2][16])*1e-5
+                        self.relpos2D_err.x     = float(msg[2][12])*1e-4
+                        self.relpos2D_err.y     = float(msg[2][13])*1e-4
+                        self.relpos2D_err.theta = float(msg[2][16])*1e-5
 
-                    self.relpos2D_pos_pub.publish( self.relpos2D_pos )
-                    self.relpos2D_err_pub.publish( self.relpos2D_err )
+                        self.relpos2D_pos_pub.publish( self.relpos2D_pos )
+                        self.relpos2D_err_pub.publish( self.relpos2D_err )
+                    else: 
+                        self.relpos2D_err.x     = 20
+                        self.relpos2D_err.y     = 20
+                        self.relpos2D_err.theta = 180 
+                        self.relpos2D_err_pub.publish( self.relpos2D_err )
 
                 elif msg[1] == "HPPOSLLH":
-                    self.hpposllh_llh.x     = float(msg[2][2])*1e-7 # Longituge
-                    self.hpposllh_llh.y     = float(msg[2][3])*1e-7 # Latitude
-                    self.hpposllh_llh.z     = float(msg[2][4])*1e-3 # Height
+                    if msg[2][3] != 0 and msg[2][4] != 0:
+                        self.hpposllh_llh.x     = float(msg[2][3])*1e-7 # Longituge
+                        self.hpposllh_llh.y     = float(msg[2][4])*1e-7 # Latitude
+                        self.hpposllh_llh.z     = float(msg[2][5])*1e-3 # Height
 
-                    self.hpposllh_err.x     = float(msg[2][10])*1e-4
-                    self.hpposllh_err.y     = float(msg[2][10])*1e-4
-                    self.hpposllh_err.z     = float(msg[2][11])*1e-4
+                        self.hpposllh_err.x     = float(msg[2][11])*1e-4
+                        self.hpposllh_err.y     = float(msg[2][11])*1e-4
+                        self.hpposllh_err.z     = float(msg[2][12])*1e-4
 
-                    self.hpposllh_llh_pub.publish( self.hpposllh_llh )
-                    self.hpposllh_err_pub.publish( self.hpposllh_err )
+                        self.hpposllh_llh_pub.publish( self.hpposllh_llh )
+                        self.hpposllh_err_pub.publish( self.hpposllh_err )
+                    else: 
+                        self.hpposllh_err.x     = 0.2
+                        self.hpposllh_err.y     = 0.2
+                        self.hpposllh_err.z     = 10
+                        self.hpposllh_err_pub.publish( self.hpposllh_err )
 
             except (ValueError, IOError) as err:
                 print(err)
