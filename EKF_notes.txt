@@ -1,0 +1,9 @@
+IMU - sensor_msgs/Imu
+
+GPS - sensor_msgs/NavSatFix
+    use navsat_transform_node:
+        sensor_msgs/NavSatFix message with raw GPS coordinates in it.
+        sensor_msgs/Imu message with an absolute (earth-referenced) heading.
+        nav_msgs/Odometry message that contains the robot’s current position e
+
+Encoders - nav_msgs/Odometry

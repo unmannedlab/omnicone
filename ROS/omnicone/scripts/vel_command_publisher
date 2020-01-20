@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+import rospy
+import open_base
+import math
+from std_msgs.msg import Float64
+from geometry_msgs.msg import Pose2D
+
+from math import pi
+from open_base.srv import KinematicsInverse, KinematicsForward
+
+class VelCommander:
+
+    def __init__(self):
+        # Velocity Commander Initialization
+        # Description:
+        #     Function initializes the velocity commander by creating the node,
+        #     subscribers, and publishers. Additionally, the parameters and
+        #     persistent variables are set/initialized to zero.
+
+        rospy.init_node('vel_command_publisher')
+
+        # Paramters
+        self.circumference = pi * 0.101                     # meters
+        self.linear_to_rot = 2 * pi / self.circumference    # rad / m
+        self.command_timeout = 1.0                          # sec
+
+        # create the publisher for each individual motor velocity
+        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
+
+        # create the subscriber for the goal velocity
+        self.vel_goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)
+
+        # create the caller to the inverse kinematics server
+        self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
+
+        # initialize persistent variables
+        self.cmd_vel  = [0.0, 0.0, 0.0]
+        self.last_command = rospy.get_time()
+
+
+    def updateVels(self, goal):
+        # Goal Velocity Subscriber
+        # Description:
+        #     Function translates local velocity goal into individual motor
+        #     velocities using the inverse kinematics service from open_base.
+        #     These velocities are then published to each motor command topic.
+
+        resp = self.ik_service_client(goal)
+
+        self.cmd_vel[0] = -resp.output.v_left  * self.linear_to_rot
+        self.cmd_vel[1] = -resp.output.v_back  * self.linear_to_rot
+        self.cmd_vel[2] = -resp.output.v_right * self.linear_to_rot
+
+        self.last_command = rospy.get_time()
+
+
+    def run(self):
+        # Velocity Command Publisher
+        # Description:
+        #     Publishes calculated goal motor velocities based on last given
+        #     local velocity goal. Publishes independent of updates unless
+        #     command timeout is reached.
+
+        rate = rospy.Rate(10) # 10 Hz
+
+        while(not rospy.is_shutdown()):
+            if ( rospy.get_time() - self.last_command > self.command_timeout):
+                self.cmd_vel = [0.0, 0.0, 0.0]
+
+            self.left_pub.publish( self.cmd_vel[0])
+            self.back_pub.publish( self.cmd_vel[1])
+            self.right_pub.publish(self.cmd_vel[2])
+            rate.sleep()
+
+
+if __name__ == '__main__':
+    vel_command_pub = VelCommander()
+    vel_command_pub.run()
