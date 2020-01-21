@@ -2,13 +2,11 @@
 
 import rospy
 import math
-import open_base
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist, Pose2D
 from nav_msgs.msg import Path
 
 from math import pi
-from open_base.srv import KinematicsInverse
 
 
 class Kinematic_Controller:
@@ -28,26 +26,24 @@ class Kinematic_Controller:
         self.command_timeout = 1.0                          # sec
 
         # Create the command publishers
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
+        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command2' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command2' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command2', Float64, queue_size=10)
 
         # Create the state and path subscribers
         self.state_sub = rospy.Subscriber('/EKF/state', Twist, self.updateVels)
         self.path_sub  = rospy.Subscriber('Waypoints',  Path,  self.updatePath)
 
-        # Create the caller to the inverse kinematics server
-        self.ik_service_client = rospy.ServiceProxy('/kinematics_inverse_world', KinematicsInverse)
-
         # Initialize persistent variables
         self.cmd_vel  = [0.0, 0.0, 0.0]
+        self.cmd_vel2 = [0.0, 0.0, 0.0]
         self.last_cmd_time = rospy.get_time()
         self.Waypoints = Path()
-        self.path_index = -1
+        self.path_index = 10
 
         # Kinematic Controller Values
-        self.K_err = 1.0
-        self.desired_speed = 0.15 # m/s
+        self.K_err = 4
+        self.desired_speed = 0.25 # m/s
 
 
     def updatePath(self, msg):
@@ -87,7 +83,7 @@ class Kinematic_Controller:
                 if distance < dist_min:
                     dist_min = distance
                     self.path_index = i
-
+        
         # P0 - Current state position
         x0 = msg.linear.x
         y0 = msg.linear.y
@@ -99,7 +95,7 @@ class Kinematic_Controller:
         y2 = self.Waypoints.poses[self.path_index+1].pose.position.y
 
         dT = float(180 - msg.linear.z)                       # degrees
-        Vw = dT / max(abs(dT),20) * self.desired_speed * 2
+        Vw = dT / max(abs(dT),30) * self.desired_speed * 16
 
         if self.path_index == len(self.Waypoints.poses)-2:
             # If closest to last point, control to final point and stop 
@@ -118,14 +114,12 @@ class Kinematic_Controller:
                         max(distance,1) * self.desired_speed
 
             # Transform to joint velocities using inverse kinematics
-            goal = Pose2D(Vx,Vy,Vw)
-            resp = self.ik_service_client(goal)
-            
-            # Convert to rotational speeds
-            self.cmd_vel[0] = -resp.output.v_left  * self.linear_to_rot
-            self.cmd_vel[1] = -resp.output.v_back  * self.linear_to_rot
-            self.cmd_vel[2] = -resp.output.v_right * self.linear_to_rot
+            resp = self.InverseKinematics(Vx,Vy,Vw)
 
+            # Convert to rotational speeds
+            self.cmd_vel[0] = -resp[0] * self.linear_to_rot
+            self.cmd_vel[1] = -resp[1] * self.linear_to_rot
+            self.cmd_vel[2] = -resp[2] * self.linear_to_rot  
 
         else:
             # Calculate Line equation between P1 and P2 in the following form:
@@ -144,17 +138,28 @@ class Kinematic_Controller:
 
             # Normalized path velocity
             path_norm = math.sqrt( dx_path ** 2 + dy_path ** 2 )
-            Vx_path = dx_path / path_norm
-            Vy_path = dy_path / path_norm
+            Vx_path = dx_path / path_norm * self.desired_speed
+            Vy_path = dy_path / path_norm * self.desired_speed
 
             # Error velocity
             Vx_err  = self.K_err * (x3 - x0)
             Vy_err  = self.K_err * (y3 - y0)        
 
+            print 
+            print "P0; ", x0, y0
+            print "P1; ", x1, y1
+            print "P2; ", x2, y2
+            print "P3; ", x3, y3 
+            print "V_err: ", Vx_err, Vy_err
+            print "V_pth: ", Vx_path, Vy_path
+            
+
             # Normalize desired and error correction velocities
             V_world  = math.sqrt((Vx_path + Vx_err)**2 + (Vy_path + Vy_err)**2)
             Vx_world = (Vx_path + Vx_err) / V_world * self.desired_speed
             Vy_world = (Vy_path + Vy_err) / V_world * self.desired_speed
+
+            print "V_wld: ", Vx_world, Vy_world
 
             # Transform global control velocity to local control velocity
             Vx = -Vx_world * math.cos(math.radians(msg.linear.z)) + \
@@ -163,15 +168,22 @@ class Kinematic_Controller:
                   Vy_world * math.cos(math.radians(msg.linear.z))
             
             # Transform to joint velocities using inverse kinematics
-            goal = Pose2D(Vx,Vy,Vw)
-            resp = self.ik_service_client(goal)
+            resp = self.InverseKinematics(Vx,Vy,Vw)
 
             # Convert to rotational speeds
-            self.cmd_vel[0] = -resp.output.v_left  * self.linear_to_rot
-            self.cmd_vel[1] = -resp.output.v_back  * self.linear_to_rot
-            self.cmd_vel[2] = -resp.output.v_right * self.linear_to_rot
+            self.cmd_vel[0] = -resp[0] * self.linear_to_rot
+            self.cmd_vel[1] = -resp[1] * self.linear_to_rot
+            self.cmd_vel[2] = -resp[2] * self.linear_to_rot           
 
         self.last_cmd_time = rospy.get_time()
+
+    def InverseKinematics(self,Vx,Vy,Vw):
+        output = [0.0, 0.0, 0.0]
+        R = 0.1905
+        output[0] = -Vx*math.sin(math.radians(150)) + Vy*math.cos(math.radians(150)) + Vw * R # Left
+        output[1] = -Vx*math.sin(math.radians(270)) + Vy*math.cos(math.radians(270)) + Vw * R # Back
+        output[2] = -Vx*math.sin(math.radians( 30)) + Vy*math.cos(math.radians( 30)) + Vw * R # Right
+        return output
 
     def run(self):
         # Kinematic Controller Publisher

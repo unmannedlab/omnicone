@@ -75,5 +75,5 @@ class Waypoint_Publisher:
 
 
 if __name__ == '__main__':
-    WayPub = Waypoint_Publisher("BridgeTest1.csv")
+    WayPub = Waypoint_Publisher("SquarePath.csv")
     WayPub.run()

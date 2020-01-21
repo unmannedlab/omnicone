@@ -23,7 +23,6 @@ class EKF_omnicone:
         self.lon_home = -96.345611
         self.lat_home =  30.6128444
 
-
         # create the subscriber for the encoder_pulses_per_revolution
         self.left_enc_sub  = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
         self.back_enc_sub  = rospy.Subscriber( '/back_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_back)
@@ -42,8 +41,8 @@ class EKF_omnicone:
         self.enc_prev = [0.0, 0.0, 0.0]
         self.enc_curr = [0.0, 0.0, 0.0]
 
-        self.UBX_rel_pos = [0.0, 0.0, 0.0]
-        self.UBX_llh_llh = [0.0, 0.0, 0.0]
+        self.UBX_rel_pos = [0.0, 0.0, 180.0]
+        self.UBX_llh_llh = [self.lon_home, self.lat_home, 0.0]
 
         self.state = np.array([[0.0],[0.0],[180.0],[0.0],[0.0],[0.0]])
 
@@ -74,9 +73,9 @@ class EKF_omnicone:
                                         [0.0, 0.0, 0.0], \
                                         [0.0, 0.0, 0.0]])
 
-        self.Observation_cov_R = np.array([ [1.0, 0.0, 0.0], \
-                                            [0.0, 1.0, 0.0], \
-                                            [0.0, 0.0, 1.0]])
+        self.Observation_cov_R = np.array([ [0.3, 0.0, 0.0], \
+                                            [0.0, 0.3, 0.0], \
+                                            [0.0, 0.0, 4.0]])
 
         self.innovation_res_y = np.array([  [0],[0],[0]])
 
@@ -224,25 +223,31 @@ class EKF_omnicone:
         dN = R * math.radians(dlat)     # meters
         dT = self.UBX_rel_pos[2]        # degrees
 
+        print 
         # Measurement in matrix format
         measurement = np.array([[dE],[dN],[dT]])
 
         # y_k       = z_k - h(xhat_k|k-1)
         self.innovation_res_y = measurement - np.matmul(self.Observation_H, self.state)
-
+        
         # S_k       = H_k * P_k|k-1 * H_k^T + R_kError
         self.innovation_cov_S = np.matmul(self.Observation_H, np.matmul(self.state_cov, np.transpose(self.Observation_H))) + self.Observation_cov_R
+        print "Innovation Covariance:"
+        print self.innovation_cov_S
 
         # K_k       = P_k|k-1 * H_k^T * S_k^-1
         self.Kalman_gain_K = np.matmul(self.state_cov, np.matmul(np.transpose(self.Observation_H), np.linalg.inv(self.innovation_cov_S)))
+        print "Kalman Gain:"
+        print self.Kalman_gain_K
 
         # xhat_k|k  = xhat_k|k-1 + K_k * y_k
         self.state = self.state + np.matmul(self.Kalman_gain_K, self.innovation_res_y)
+        print "State:"
+        print self.state 
 
         # P_k|k     = (I - K_k * H_k) * P_k|k-1
         self.state_cov = np.matmul((np.eye(6) - np.matmul(self.Kalman_gain_K, self.Observation_H)), self.state_cov)
-
-
+        
     def run(self):
         # State Estimation Publisher
         # Description:
