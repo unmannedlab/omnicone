@@ -26,9 +26,9 @@ class Kinematic_Controller:
         self.command_timeout = 1.0                          # sec
 
         # Create the command publishers
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command2' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command2' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command2', Float64, queue_size=10)
+        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
 
         # Create the state and path subscribers
         self.state_sub = rospy.Subscriber('/EKF/state', Twist, self.updateVels)
@@ -39,7 +39,7 @@ class Kinematic_Controller:
         self.cmd_vel2 = [0.0, 0.0, 0.0]
         self.last_cmd_time = rospy.get_time()
         self.Waypoints = Path()
-        self.path_index = 10
+        self.path_index = 1
 
         # Kinematic Controller Values
         self.K_err = 4
@@ -65,24 +65,24 @@ class Kinematic_Controller:
         # Look for closest point and update global velocity goal
         dist_min = 10e9
 
-        if self.path_index == -1:
-            # If first search of path for closest pose, checks all path poses
-            for i in range(len(self.Waypoints.poses)-1):
-                distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-                                     (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
-                if distance < dist_min:
-                    dist_min = distance
-                    self.path_index = i
+        # if self.path_index == -1:
+        #     # If first search of path for closest pose, checks all path poses
+        #     for i in range(len(self.Waypoints.poses)-1):
+        #         distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
+        #                              (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
+        #         if distance < dist_min:
+        #             dist_min = distance
+        #             self.path_index = i
             
-        else:
-            # Otherwise, only checks nearest 50 poses for closest path pose
-            for i in range(max(0,self.path_index-25), \
-                           min(self.path_index+25,len(self.Waypoints.poses)-1)):
-                distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-                                     (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
-                if distance < dist_min:
-                    dist_min = distance
-                    self.path_index = i
+        # else:
+        #     # Otherwise, only checks nearest 50 poses for closest path pose
+        for i in range(max(0,self.path_index-2), \
+                        min(self.path_index+8,len(self.Waypoints.poses)-1)):
+            distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
+                                    (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
+            if distance < dist_min:
+                dist_min = distance
+                self.path_index = i
         
         # P0 - Current state position
         x0 = msg.linear.x
