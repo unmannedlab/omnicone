@@ -19,8 +19,9 @@ class EKF_omnicone:
         self.circumference = pi * 0.101                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 1.0                          # sec
+        self.UBX_error_gain = 10
 
-        self.lon_home = -96.345611
+        self.lon_home = -96.3456110
         self.lat_home =  30.6128444
 
         # create the subscriber for the encoder_pulses_per_revolution
@@ -62,6 +63,7 @@ class EKF_omnicone:
                                         [0.0, 0.0, 0.0, 0.0, 1.0, 0.0 ], \
                                         [0.0, 0.0, 0.0, 0.0, 0.0, 1.0 ]])
 
+        # State Observation Matrix is Constant 
         self.Observation_H = np.array([ [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
                                         [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], \
                                         [0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])
@@ -89,7 +91,7 @@ class EKF_omnicone:
         # Description:
         #     Function updates the theta component of the Observation Covariance
         #     Matrix [R]. This value is estimated by the UBX F9P module.
-        self.Observation_cov_R[2,2] = msg.theta
+        self.Observation_cov_R[2,2] = msg.theta * self.UBX_error_gain
 
 
     def update_relpos2d_pos(self, msg):
@@ -99,15 +101,10 @@ class EKF_omnicone:
         #     in the Update() funtion
         self.UBX_rel_pos[2] = msg.theta
 
-
-    def update_hpposllh_err(self, msg):
-        # UBX publisher HPPosLLH Error Callback
-        # Description:
-        #     Function updates the x and y components of the Observation
-        #     Covariance Matrix [R]. This value is estimated by the UBX F9P
+update_relpos2d_pos
         #     module.
-        self.Observation_cov_R[0,0] = msg.x
-        self.Observation_cov_R[1,1] = msg.y
+        self.Observation_cov_R[0,0] = msg.x * self.UBX_error_gain
+        self.Observation_cov_R[1,1] = msg.y * self.UBX_error_gain
 
 
     def updateEnc_left(self, msg):
@@ -223,7 +220,6 @@ class EKF_omnicone:
         dN = R * math.radians(dlat)     # meters
         dT = self.UBX_rel_pos[2]        # degrees
 
-        print 
         # Measurement in matrix format
         measurement = np.array([[dE],[dN],[dT]])
 
@@ -232,18 +228,12 @@ class EKF_omnicone:
         
         # S_k       = H_k * P_k|k-1 * H_k^T + R_kError
         self.innovation_cov_S = np.matmul(self.Observation_H, np.matmul(self.state_cov, np.transpose(self.Observation_H))) + self.Observation_cov_R
-        print "Innovation Covariance:"
-        print self.innovation_cov_S
 
         # K_k       = P_k|k-1 * H_k^T * S_k^-1
         self.Kalman_gain_K = np.matmul(self.state_cov, np.matmul(np.transpose(self.Observation_H), np.linalg.inv(self.innovation_cov_S)))
-        print "Kalman Gain:"
-        print self.Kalman_gain_K
 
         # xhat_k|k  = xhat_k|k-1 + K_k * y_k
         self.state = self.state + np.matmul(self.Kalman_gain_K, self.innovation_res_y)
-        print "State:"
-        print self.state 
 
         # P_k|k     = (I - K_k * H_k) * P_k|k-1
         self.state_cov = np.matmul((np.eye(6) - np.matmul(self.Kalman_gain_K, self.Observation_H)), self.state_cov)

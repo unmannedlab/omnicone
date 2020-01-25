@@ -42,7 +42,8 @@ class Kinematic_Controller:
         self.path_index = 1
 
         # Kinematic Controller Values
-        self.K_err = 4
+        self.K_err = 1
+        self.K_theta = 0.4
         self.desired_speed = 0.25 # m/s
 
 
@@ -94,8 +95,8 @@ class Kinematic_Controller:
         x2 = self.Waypoints.poses[self.path_index+1].pose.position.x
         y2 = self.Waypoints.poses[self.path_index+1].pose.position.y
 
-        dT = float(180 - msg.linear.z)                       # degrees
-        Vw = dT / max(abs(dT),30) * self.desired_speed * 16
+        dT = float(msg.linear.z - 180)                       # degrees
+        Vw = dT / max(abs(dT),30) * self.K_theta
 
         if self.path_index == len(self.Waypoints.poses)-2:
             # If closest to last point, control to final point and stop 
@@ -143,23 +144,12 @@ class Kinematic_Controller:
 
             # Error velocity
             Vx_err  = self.K_err * (x3 - x0)
-            Vy_err  = self.K_err * (y3 - y0)        
-
-            print 
-            print "P0; ", x0, y0
-            print "P1; ", x1, y1
-            print "P2; ", x2, y2
-            print "P3; ", x3, y3 
-            print "V_err: ", Vx_err, Vy_err
-            print "V_pth: ", Vx_path, Vy_path
-            
+            Vy_err  = self.K_err * (y3 - y0)                    
 
             # Normalize desired and error correction velocities
             V_world  = math.sqrt((Vx_path + Vx_err)**2 + (Vy_path + Vy_err)**2)
             Vx_world = (Vx_path + Vx_err) / V_world * self.desired_speed
             Vy_world = (Vy_path + Vy_err) / V_world * self.desired_speed
-
-            print "V_wld: ", Vx_world, Vy_world
 
             # Transform global control velocity to local control velocity
             Vx = -Vx_world * math.cos(math.radians(msg.linear.z)) + \
