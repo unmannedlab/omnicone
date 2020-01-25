@@ -10,7 +10,6 @@ from geometry_msgs.msg import Twist, Pose2D, Vector3
 from math import pi
 class EKF_omnicone:
 
-
     def __init__(self):
 
         rospy.init_node('EKF')
@@ -28,10 +27,10 @@ class EKF_omnicone:
         self.left_enc_sub  = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
         self.back_enc_sub  = rospy.Subscriber( '/back_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_back)
         self.right_enc_sub = rospy.Subscriber('/right_joint_velocity_controller/absolute_encoder_count', Int32, self.predict)
-        self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2D/err', Pose2D  , self.update_relpos2d_err)
-        self.UBX_rel_err_sub = rospy.Subscriber('/UBX/relpos2D/pos', Pose2D  , self.update_relpos2d_pos)
-        self.UBX_llh_llh_sub = rospy.Subscriber('/UBX/hpposllh/err', Vector3 , self.update_hpposllh_err)
-        self.UBX_llh_err_sub = rospy.Subscriber('/UBX/hpposllh/llh', Vector3 , self.update)
+        self.UBX_llh_llh_sub = rospy.Subscriber('/UBX/hpposllh/llh', Vector3 , self.update_hpposllh_llh)
+        self.UBX_llh_err_sub = rospy.Subscriber('/UBX/hpposllh/err', Vector3 , self.update_hpposllh_err)
+        self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2D/pos', Pose2D  , self.update_relpos2d_pos)
+        self.UBX_rel_err_sub = rospy.Subscriber('/UBX/relpos2D/err', Pose2D  , self.update_relpos2d_err)
 
         # create publisher for position estimate
         self.state_pub = rospy.Publisher('EKF/state', Twist, queue_size=10)
@@ -47,12 +46,12 @@ class EKF_omnicone:
 
         self.state = np.array([[0.0],[0.0],[180.0],[0.0],[0.0],[0.0]])
 
-        self.Process_Q = np.array([ [ 4.74957585660, -0.0460417908,	-0.8333033435,	 0.0024956610,	 0.2439671528,	0.0667347090],\
-                                    [-0.04604179080,  4.5408676761,	 0.8832843155,	-0.2447392906,	 0.2439671528,	0.1076589568],\
-                                    [-0.83330334350,  0.8832843155,	 4.1847115351,	-0.0488464530,	-0.0898108461,	0.8532518865],\
-                                    [ 0.00249566100, -0.2447392906,	-0.0488464530,	 0.0294990109,	-0.0003074584, -0.0501564979],\
-                                    [ 0.24396715208,  0.2439671528,	-0.0898108461,	-0.0003074584,	 0.0246242047, 	0.0222673897],\
-                                    [ 0.06673470900,  0.1076589568,	 0.8532518865,	-0.0501564979,	 0.0222673897,	8.170778926]])
+        self.Process_Q = np.array([ [ 0.0052978353,	 0.0006674407, -0.0994325658,  0.0002413208,  0.0000275520,  0.0695277024],\
+                                    [ 0.0006674407,	 0.0003035962, -0.0149129946, -0.0000231930, -0.0000157740,  0.003400838],\
+                                    [-0.0994325658,	-0.0149129946,	5.7810347696,  0.0041777458,  0.0050111468,  0.2524022406],\
+                                    [ 0.0002413208, -0.0000231930,	0.0041777458,  0.0003084370,  0.0000982770,  0.0157525239],\
+                                    [ 0.0000275520,	-0.0000157740,	0.0050111468,  0.0000982770,  0.0001116568,  0.0039943337],\
+                                    [ 0.0695277024,  0.0034008380,	0.2524022406,  0.0157525239,  0.0039943337,  8.8239143428]])
 
         self.state_cov = self.Process_Q
 
@@ -94,12 +93,14 @@ class EKF_omnicone:
         self.Observation_cov_R[2,2] = msg.theta * self.UBX_error_gain
 
 
-    def update_relpos2d_pos(self, msg):
+    def update_hpposllh_llh(self, msg):
         # UBX publisher RelPosNED Position Callback
         # Description:
         #     Function updates the theta component of the internal state for use
         #     in the Update() funtion
-        self.UBX_rel_pos[2] = msg.theta
+        self.lon =      msg.x 
+        self.lat =      msg.y
+        self.height =   msg.z
 
     def update_hpposllh_err(self, msg):
         # UBX publisher HPPosLLH Error Callback
@@ -201,7 +202,7 @@ class EKF_omnicone:
         # P_k|k-1 = F_k * P_k-1|k-1 * F_k^T + Q_k
         self.state_cov = np.matmul(self.Transition_F, np.matmul(self.state_cov, np.transpose(self.Transition_F))) + self.Process_Q
 
-    def update(self, msg):
+    def update_relpos2d_pos(self, msg):
         # UBX publisher HPPosLLH LLH Callback
         # Description:
         #     Function uses the ellipsoid model of Earth to calculate a 2D
@@ -209,17 +210,19 @@ class EKF_omnicone:
         #     measurement of the vehicle heading is used in the update step in
         #     the Kalman filter.
 
+        self.UBX_rel_pos[2] = msg.theta
+
         # Ellipsoidal model calculation of Earth
         a = 6378137.0
         b = 6356752.3142
-        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(msg.y*pi/180), 2)+ \
-                        math.pow( math.pow(b,2) * math.sin(msg.y*pi/180), 2))/ \
-                       (math.pow( a * math.cos(msg.y*pi/180), 2)+ \
-                        math.pow( b * math.sin(msg.y*pi/180), 2))) + msg.z
+        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(self.lat*pi/180), 2)+ \
+                        math.pow( math.pow(b,2) * math.sin(self.lat*pi/180), 2))/ \
+                       (math.pow( a * math.cos(self.lat*pi/180), 2)+ \
+                        math.pow( b * math.sin(self.lat*pi/180), 2))) + self.height
 
         # Transform LLH to 2D position
-        dlon = msg.x - self.lon_home    # degrees
-        dlat = msg.y - self.lat_home    # degrees
+        dlon = self.lon - self.lon_home    # degrees
+        dlat = self.lat - self.lat_home    # degrees
         dE = R * math.radians(dlon)     # meters
         dN = R * math.radians(dlat)     # meters
         dT = self.UBX_rel_pos[2]        # degrees
