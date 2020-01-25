@@ -19,7 +19,7 @@ class EKF_omnicone:
         self.circumference = pi * 0.101                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 1.0                          # sec
-        self.UBX_error_gain = 10
+        self.UBX_error_gain = 20
 
         self.lon_home = -96.3456110
         self.lat_home =  30.6128444
@@ -101,7 +101,11 @@ class EKF_omnicone:
         #     in the Update() funtion
         self.UBX_rel_pos[2] = msg.theta
 
-update_relpos2d_pos
+    def update_hpposllh_err(self, msg):
+        # UBX publisher HPPosLLH Error Callback
+        # Description:
+        #     Function updates the x and y components of the Observation
+        #     Covariance Matrix [R]. This value is estimated by the UBX F9P
         #     module.
         self.Observation_cov_R[0,0] = msg.x * self.UBX_error_gain
         self.Observation_cov_R[1,1] = msg.y * self.UBX_error_gain
@@ -169,7 +173,7 @@ update_relpos2d_pos
         # Forward Kinematics Transformation
         delta_x = (2*D2 - D1 - D3) / 3
         delta_y = math.sqrt(3) * (D3 - D1) / 3
-        delta_w = (D1 + D2 + D3)/(3 * 0.1905)
+        delta_w = -(D1 + D2 + D3)/(3 * 0.1905)
 	
         # Rotation to World Frame
         delta_x_w = -delta_x*math.cos(delta_w/2 + self.state[2]*pi/180) + \
