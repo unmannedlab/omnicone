@@ -1,0 +1,3 @@
+[submodule "ubxtranslator"]
+	path = ubxtranslator
+	url = https://github.com/unmannedlab/ubxtranslator.git

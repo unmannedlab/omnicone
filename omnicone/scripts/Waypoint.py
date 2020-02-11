@@ -42,7 +42,7 @@ class Waypoint_Publisher:
         rospack = rospkg.RosPack()
         with open( os.path.join(rospack.get_path('omnicone'),'scripts', filename) ) as f:
             for line in f:
-                ry, rx = map(float,line.split(','))
+                rx, ry = map(float,line.split(','))
                 cx.append(rx)
                 cy.append(ry)
 
@@ -75,5 +75,5 @@ class Waypoint_Publisher:
 
 
 if __name__ == '__main__':
-    WayPub = Waypoint_Publisher("BridgeTest1.csv")
+    WayPub = Waypoint_Publisher(os.path.join('..','paths', "SquarePath.csv") ) 
     WayPub.run()
