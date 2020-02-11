@@ -1,4 +1,4 @@
-# OpenBase
+# OpenBase Gazebo
 
 ![Gazebo GUI with OpenBase robot](images/Gazebo_GUI.png)
 
