@@ -18,10 +18,6 @@
 
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher" output="screen"/>
 
-<node name="ubx_cmd" pkg="omnicone" type="UBX_cmd.py" output="screen"/>
-
-<node name="gui_cmd" pkg="omnicone" type="SquareTest.py" output="screen"/>
-
-<node name="UBX" pkg="omnicone" type="UBX_publisher.py" output="screen"/>
+<node name="dead_reck_cmd" pkg="omnicone" type="dead_reck_gui.py" output="screen"/>
 
 </launch>

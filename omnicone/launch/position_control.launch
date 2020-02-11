@@ -10,14 +10,22 @@
     <rosparam command="load" file="$(find omnicone)/config/omnicone_a.yaml" />
 </node>
 
-<!-- <node name="driver_node_b" pkg="roboteq_python" type="roboteq_driver_node" output="screen">
+<node name="driver_node_b" pkg="roboteq_python" type="roboteq_driver_node" output="screen">s
     <rosparam command="load" file="$(find omnicone)/config/omnicone_b.yaml" />
-</node> -->
+</node>
 
 <node name="kinematics_node" pkg="open_base" type="open_base_kinematics" output="screen"/>
 
 <node name="vel_command_publisher" pkg="omnicone" type="vel_command_publisher" output="screen"/>
 
-<!-- <node name="dead_reck_cmd" pkg="omnicone" type="dead_reck_gui.py" output="screen"/> -->
+<node name="pos_cmd_gui" pkg="omnicone" type="pos_cmd_gui.py" output="screen"/>
+
+<node name="pos_cmd" pkg="omnicone" type="pos_cmd.py" output="screen"/>
+
+<include file="$(find mavros)/launch/px4.launch" respawn="true" respawn_delay="5" />
+
+<node name="omni_tf" pkg="omnicone" type="omni_tf_broadcaster.py" output="screen"/> -->
+
+
 
 </launch>
