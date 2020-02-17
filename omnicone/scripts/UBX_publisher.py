@@ -10,7 +10,7 @@ import rospy
 
 from geometry_msgs.msg import Pose2D, Vector3
 from ubxtranslator.core import Parser
-from ubxtranslator.predefined import NAV_CLS, ACK_CLS
+from ubxtranslator.F9P import NAV_CLS, ACK_CLS
 from geometry_msgs.msg import Pose2D
 
 
