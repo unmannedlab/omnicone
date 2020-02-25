@@ -5,21 +5,20 @@ import rospy
 import rospkg
 import math
 import open_base
-# from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist, Pose2D, PoseStamped
 from nav_msgs.msg import Path
 
 from math import pi
 
 
-class Waypoint_Publisher:
+class WaypointPublisher:
 
     def __init__(self, filename):
         # Title
         # Description:
         #     Function does
 
-        rospy.init_node('Waypoint')
+        rospy.init_node('WaypointPublisher')
 
         # create the publisher
         self.path_pub  = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
@@ -75,5 +74,5 @@ class Waypoint_Publisher:
 
 
 if __name__ == '__main__':
-    WayPub = Waypoint_Publisher(os.path.join('..','paths', "SquarePath.csv") ) 
+    WayPub = WaypointPublisher(os.path.join('..','paths', "SquarePath.csv") ) 
     WayPub.run()
