@@ -1,0 +1,2 @@
+bool kill_switch
+string machine_state

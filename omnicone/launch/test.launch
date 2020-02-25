@@ -1,0 +1,7 @@
+<launch>
+
+<node name="ConeStateManager" pkg="omnicone" type="ConeStateManager" output="screen">
+    <rosparam command="load" file="$(find omnicone)/config/cone.yaml" />
+</node>
+
+</launch>

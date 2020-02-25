@@ -2,14 +2,13 @@
 
 import rospy
 import math
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Bool
 from geometry_msgs.msg import Twist, Pose2D
+from omnicone_msgs.msg import ConeState
 from nav_msgs.msg import Path
-
 from math import pi
 
-
-class Kinematic_Controller:
+class KinematicController:
 
     def __init__(self):
         # Kinematic Controller object initialization
@@ -18,7 +17,7 @@ class Kinematic_Controller:
         #     to state and path and publsihes commands. Initializes persistent 
         #     variables.   
 
-        rospy.init_node('Kinematic_Controller')
+        rospy.init_node('KinematicController')
 
         # Paramters
         self.circumference = pi * 0.101                     # meters
@@ -29,10 +28,12 @@ class Kinematic_Controller:
         self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
         self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
         self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
+        self.Kine_pub  = rospy.Publisher('KControl/PathEnd'                       , Bool,    queue_size=10)
 
         # Create the state and path subscribers
         self.state_sub = rospy.Subscriber('/EKF/state', Twist, self.updateVels)
         self.path_sub  = rospy.Subscriber('Waypoints',  Path,  self.updatePath)
+        self.cone_state_sub  = rospy.Subscriber('/ConeState', ConeState, self.update_cone_state)
 
         # Initialize persistent variables
         self.cmd_vel  = [0.0, 0.0, 0.0]
@@ -40,6 +41,7 @@ class Kinematic_Controller:
         self.last_cmd_time = rospy.get_time()
         self.Waypoints = Path()
         self.path_index = 1
+        self.cone_mode = 0
 
         # Kinematic Controller Values
         self.K_err = 1
@@ -47,12 +49,23 @@ class Kinematic_Controller:
         self.desired_speed = 0.25 # m/s
 
 
+    def update_cone_state(self,msg):
+        if self.cone_status.mode == 0 and msg.mode == 1:
+            self.path_end = False
+        elif self.cone_status.mode == 2 and msg.mode == 3:
+            self.path_end = False
+        self.cone_status = msg
+
+
     def updatePath(self, msg):
         # Update Desired Path
         # Description:
-        #     Function updates the internal desired path for the robot.
-
-        self.Waypoints = msg
+        #     Function updates the internal desired path for the robot. 
+        #     If returning, reverses the direction of the path.
+        if self.cone_status.mode == 3:
+            self.Waypoints.poses = msg.poses[::-1]
+        else:
+            self.Waypoints = msg
 
 
     def updateVels(self, msg):
@@ -64,19 +77,8 @@ class Kinematic_Controller:
         #     controlled to that section of the path. 
 
         # Look for closest point and update global velocity goal
-        dist_min = 10e9
+        dist_min = 10e9 
 
-        # if self.path_index == -1:
-        #     # If first search of path for closest pose, checks all path poses
-        #     for i in range(len(self.Waypoints.poses)-1):
-        #         distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-        #                              (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
-        #         if distance < dist_min:
-        #             dist_min = distance
-        #             self.path_index = i
-            
-        # else:
-        #     # Otherwise, only checks nearest 50 poses for closest path pose
         for i in range(max(0,self.path_index-2), \
                         min(self.path_index+8,len(self.Waypoints.poses)-1)):
             distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
@@ -104,6 +106,9 @@ class Kinematic_Controller:
             dy_world = y2 - y0
             distance = math.sqrt(dx_world**2 + dy_world**2)
             
+            if distance < 0.05:
+                self.path_end = True
+
             # Normalizes velocities to error from final point
             #   Ramps down speed when less than 1 m away
             Vx = -(dx_world * math.cos(math.radians(msg.linear.z)) -   \
@@ -167,6 +172,7 @@ class Kinematic_Controller:
 
         self.last_cmd_time = rospy.get_time()
 
+
     def InverseKinematics(self,Vx,Vy,Vw):
         output = [0.0, 0.0, 0.0]
         R = 0.1905
@@ -174,6 +180,7 @@ class Kinematic_Controller:
         output[1] = -Vx*math.sin(math.radians(270)) + Vy*math.cos(math.radians(270)) + Vw * R # Back
         output[2] = -Vx*math.sin(math.radians( 30)) + Vy*math.cos(math.radians( 30)) + Vw * R # Right
         return output
+
 
     def run(self):
         # Kinematic Controller Publisher
@@ -183,18 +190,20 @@ class Kinematic_Controller:
         #     EKF topic is lost for more than 1 second. Publishes commands as 
         #     individual joint commands.
 
-        rate = rospy.Rate(10) # 1 Hz
+        rate = rospy.Rate(10) # 10 Hz
 
         while(not rospy.is_shutdown()):
             if ( rospy.get_time() - self.last_cmd_time > self.command_timeout):
                 self.cmd_vel = [0.0, 0.0, 0.0]
 
-            self.left_pub.publish( self.cmd_vel[0])
-            self.back_pub.publish( self.cmd_vel[1])
-            self.right_pub.publish(self.cmd_vel[2])
+            if self.cone_status.mode != 0 and not self.cone_status.proximity_alarm:
+                self.left_pub.publish( self.cmd_vel[0])
+                self.back_pub.publish( self.cmd_vel[1])
+                self.right_pub.publish(self.cmd_vel[2])
+                self.Kine_pub.publish( self.path_end)
             rate.sleep()
 
 
 if __name__ == '__main__':
-    K_Control = Kinematic_Controller()
+    K_Control = KinematicController()
     K_Control.run()

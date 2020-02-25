@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+
+# Initialize Position:
+#     Once accuracy reaches certain level, wait 1 minute 
+#     Average positions and publish as home coordinates
+
+# States:
+#     Initialization:
+#         EKF waits for home position before publishing
+#         Ends when EKF publishes first position estimate 
+#     Deploy: 
+#         Following path
+#         Listening to forward device
+#         Stops if too close 
+#     Idle:
+#         Waiting for signal
+#     Return:
+#         Follow path in reverse 
+#         Listening to forward device
+#         Stops if too close 
+
+# Need check for proximity and import of transported message
+
+
+import rospy
+from std_msgs.msg import Bool, Int8
+from omnicone_msgs.msg import ConeState
+from geometry_msgs.msg import Vector3, Twist, Pose2D
+from ubxtranslator.msg import hpposllh
+
+
+class ConeStateManager:
+
+    def __init__(self):
+
+        rospy.init_node('ConeStateManager')
+
+        self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
+
+        self.kill_sub       = rospy.Subscriber('Cone_Command/Kill', Bool,   self.update_kill_cmd )
+        self.state_sub      = rospy.Subscriber('Cone_Command/State',Int8,   self.update_state_cmd)
+        self.hpposllh_sub   = rospy.Subscriber('UBX/hpposllh',      Vector3,self.update_hpposllh )
+        self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,  self.update_EKF_state)
+        self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,   self.update_path_end)
+        
+        self.cmd_timeout    = 2.5
+        self.last_cmd_time  = rospy.get_time()
+        
+        self.hpposllh       = hpposllh()
+        self.kill_switch    = 0
+        self.state_cmd      = 0
+        self.state          = ConeState(rospy.get_param('~Cone_number'), False, 0, False, Pose2D(0,0,0), Vector3(0,0,0))
+
+        rospy.sleep(10.)
+
+        # System Modes
+        #     0 - Initializing  
+        #     1 - Deploying 
+        #     2 - Idling 
+        #     3 - Returning 
+        #     4 - Home 
+
+    def update_path_end(self, msg):
+        self.path_end = msg 
+
+    def update_kill_cmd(self, msg):
+        self.kill_switch    = msg
+        self.last_beat      = rospy.get_time()
+
+
+    def update_state_cmd(self,msg):
+        self.state_cmd      = msg
+
+        if self.state.mode == 1:
+            if self.state_cmd == 3:
+                self.state.mode = 3
+            elif self.path_end:
+                self.state.mode == 2
+
+        elif self.state.mode == 2 and self.state_cmd == 3:
+            self.state.mode = 3
+
+        elif self.state.mode == 3 and self.path_end:
+            self.state.mode = 4
+
+
+    def update_hpposllh(self,msg):
+        if self.state.mode == 0 and msg.err.lon < 0.04:
+            self.state.home.x = msg.llh.lon 
+            self.state.home.y = msg.llh.lat 
+            self.state.mode = 1 
+            self.state.init = True
+
+
+    def update_EKF_state(self,msg):
+        self.cone_state.pos = Pose2D(   msg.linear.x, \
+                                        msg.linear.y, \
+                                        msg.linear.z)
+
+
+    def run(self):
+        rate = rospy.Rate(10) # 10 Hz
+
+        while(not rospy.is_shutdown()):
+            if ( rospy.get_time() - self.last_cmd_time > self.cmd_timeout):
+                self.kill_switch = True
+
+            self.state_pub.publish(self.state)
+
+            rate.sleep()
+
+
+if __name__ == '__main__':
+    Cone_Manager = ConeStateManager()
+    Cone_Manager.run()
+

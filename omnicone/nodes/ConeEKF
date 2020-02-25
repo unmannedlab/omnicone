@@ -6,13 +6,15 @@ import math
 import numpy as np
 from std_msgs.msg import Int32
 from geometry_msgs.msg import Twist, Pose2D, Vector3
+from omnicone_msgs.msg import ConeState
+from ubxtranslator.msg import hpposllh, relpos2D
 
 from math import pi
-class EKF_omnicone:
+class ConeEKF:
 
     def __init__(self):
 
-        rospy.init_node('EKF')
+        rospy.init_node('ConeEKF')
 
         # Paramters
         self.circumference = pi * 0.101                     # meters
@@ -20,29 +22,23 @@ class EKF_omnicone:
         self.command_timeout = 1.0                          # sec
         self.UBX_error_gain = 20
 
-        self.lon_home = -96.3456110
-        self.lat_home =  30.6128444
-
-        # create the subscriber for the encoder_pulses_per_revolution
-        self.left_enc_sub  = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
-        self.back_enc_sub  = rospy.Subscriber( '/back_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_back)
-        self.right_enc_sub = rospy.Subscriber('/right_joint_velocity_controller/absolute_encoder_count', Int32, self.predict)
-        self.UBX_llh_llh_sub = rospy.Subscriber('/UBX/hpposllh/llh', Vector3 , self.update_hpposllh_llh)
-        self.UBX_llh_err_sub = rospy.Subscriber('/UBX/hpposllh/err', Vector3 , self.update_hpposllh_err)
-        self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2D/pos', Pose2D  , self.update_relpos2d_pos)
-        self.UBX_rel_err_sub = rospy.Subscriber('/UBX/relpos2D/err', Pose2D  , self.update_relpos2d_err)
+        # create subscribers 
+        self.left_enc_sub    = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
+        self.back_enc_sub    = rospy.Subscriber( '/back_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_back)
+        self.right_enc_sub   = rospy.Subscriber('/right_joint_velocity_controller/absolute_encoder_count', Int32, self.predict_step)
+        self.UBX_llh_llh_sub = rospy.Subscriber('/UBX/hpposllh', hpposllh, self.update_hpposllh)
+        self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2D', relpos2D, self.update_step)
+        self.cone_state_sub  = rospy.Subscriber('/ConeState',   ConeState, self.update_cone_state)
 
         # create publisher for position estimate
         self.state_pub = rospy.Publisher('EKF/state', Twist, queue_size=10)
         self.state_twist = Twist()
 
         # set/initialize persistent variables
+        self.cone_init = False
         self.enc_init = [False, False, False]
         self.enc_prev = [0.0, 0.0, 0.0]
         self.enc_curr = [0.0, 0.0, 0.0]
-
-        self.UBX_rel_pos = [0.0, 0.0, 180.0]
-        self.UBX_llh_llh = [self.lon_home, self.lat_home, 0.0]
 
         self.state = np.array([[0.0],[0.0],[180.0],[0.0],[0.0],[0.0]])
 
@@ -85,31 +81,28 @@ class EKF_omnicone:
                                             [0.0, 0.0, 1.0]])
 
 
-    def update_relpos2d_err(self, msg):
-        # UBX publisher RelPosNED Position Callback
-        # Description:
-        #     Function updates the theta component of the Observation Covariance
-        #     Matrix [R]. This value is estimated by the UBX F9P module.
-        self.Observation_cov_R[2,2] = msg.theta * self.UBX_error_gain
+    def update_cone_state(self,msg):
+        # Cone Initialization Update
+        if not self.cone_init:
+            self.cone_init = True 
+            self.lon_home = msg.home.x
+            self.lat_home = msg.home.x
 
 
-    def update_hpposllh_llh(self, msg):
-        # UBX publisher RelPosNED Position Callback
+    def update_hpposllh(self, msg):
+        # UBX publisher HPPosLLH Callback
         # Description:
-        #     Function updates the theta component of the internal state for use
-        #     in the Update() funtion
-        self.lon =      msg.x 
-        self.lat =      msg.y
-        self.height =   msg.z
-
-    def update_hpposllh_err(self, msg):
-        # UBX publisher HPPosLLH Error Callback
-        # Description:
-        #     Function updates the x and y components of the Observation
+        #     Function updates the internal latitude, longitude, and height for 
+        #     use with the state calculation.
+        #     Additionally, updates the x and y components of the Observation
         #     Covariance Matrix [R]. This value is estimated by the UBX F9P
         #     module.
-        self.Observation_cov_R[0,0] = msg.x * self.UBX_error_gain
-        self.Observation_cov_R[1,1] = msg.y * self.UBX_error_gain
+        self.lon =      msg.llh.lon
+        self.lat =      msg.llh.lat
+        self.height =   msg.llh.height
+
+        self.Observation_cov_R[0,0] = msg.err.lon * self.UBX_error_gain
+        self.Observation_cov_R[1,1] = msg.err.lat * self.UBX_error_gain
 
 
     def updateEnc_left(self, msg):
@@ -140,7 +133,7 @@ class EKF_omnicone:
             self.enc_init[1] = True
 
 
-    def predict(self, msg):
+    def predict_step(self, msg):
         # Right Motor Encoder Callback
         # Description
         #     Function updates the internal memory of the right encoder counter.
@@ -202,7 +195,8 @@ class EKF_omnicone:
         # P_k|k-1 = F_k * P_k-1|k-1 * F_k^T + Q_k
         self.state_cov = np.matmul(self.Transition_F, np.matmul(self.state_cov, np.transpose(self.Transition_F))) + self.Process_Q
 
-    def update_relpos2d_pos(self, msg):
+
+    def update_step(self, msg):
         # UBX publisher HPPosLLH LLH Callback
         # Description:
         #     Function uses the ellipsoid model of Earth to calculate a 2D
@@ -210,7 +204,8 @@ class EKF_omnicone:
         #     measurement of the vehicle heading is used in the update step in
         #     the Kalman filter.
 
-        self.UBX_rel_pos[2] = msg.theta
+        # Update state and observation covariance values
+        self.Observation_cov_R[2,2] = msg.err.theta * self.UBX_error_gain
 
         # Ellipsoidal model calculation of Earth
         a = 6378137.0
@@ -225,10 +220,9 @@ class EKF_omnicone:
         dlat = self.lat - self.lat_home    # degrees
         dE = R * math.radians(dlon)     # meters
         dN = R * math.radians(dlat)     # meters
-        dT = self.UBX_rel_pos[2]        # degrees
 
         # Measurement in matrix format
-        measurement = np.array([[dE],[dN],[dT]])
+        measurement = np.array([[dE],[dN],[msg.pos.theta]])
 
         # y_k       = z_k - h(xhat_k|k-1)
         self.innovation_res_y = measurement - np.matmul(self.Observation_H, self.state)
@@ -256,7 +250,6 @@ class EKF_omnicone:
 
         rate = rospy.Rate(10) # 10 Hz
         while(not rospy.is_shutdown()):
-
             self.state_twist.linear.x  = self.state[0]
             self.state_twist.linear.y  = self.state[1]
             self.state_twist.linear.z  = self.state[2]
@@ -269,5 +262,5 @@ class EKF_omnicone:
 
 
 if __name__ == '__main__':
-    EKF_omnicone = EKF_omnicone()
-    EKF_omnicone.run()
+    Omnicone_EKF = ConeEKF()
+    Omnicone_EKF.run()
