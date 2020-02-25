@@ -29,9 +29,17 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <depend>open_base</depend>
-  <depend>roboteq_python</depend>
-  <depend>roscpp</depend>
-  <depend>rospy</depend>
 
+  <depend>geometry_msgs</depend>
+  <depend>math</depend>
+  <depend>nav_msgs</depend>
+  <depend>nimbro_network</depend>  
+  <depend>omnicone_msgs</depend>  
+  <depend>open_base</depend>
+  <depend>os</depend>  
+  <depend>roboteq_python</depend>
+  <depend>roscpp</depend>  
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  
 </package>

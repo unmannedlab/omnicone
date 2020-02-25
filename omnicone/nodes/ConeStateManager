@@ -21,7 +21,7 @@
 
 # Need check for proximity and import of transported message
 
-
+import math
 import rospy
 from std_msgs.msg import Bool, Int8
 from omnicone_msgs.msg import ConeState
@@ -37,12 +37,13 @@ class ConeStateManager:
 
         self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
 
-        self.kill_sub       = rospy.Subscriber('Cone_Command/Kill', Bool,   self.update_kill_cmd )
-        self.state_sub      = rospy.Subscriber('Cone_Command/State',Int8,   self.update_state_cmd)
-        self.hpposllh_sub   = rospy.Subscriber('UBX/hpposllh',      Vector3,self.update_hpposllh )
-        self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,  self.update_EKF_state)
-        self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,   self.update_path_end)
-        
+        self.hpposllh_sub   = rospy.Subscriber('UBX/hpposllh',      Vector3,    self.update_hpposllh)
+        self.kill_sub       = rospy.Subscriber('Cone_Command/Kill', Bool,       self.update_kill_cmd)
+        self.state_sub      = rospy.Subscriber('Cone_Command/State',Int8,       self.update_state_cmd)
+        self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,      self.update_EKF_state)
+        self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,       self.update_path_end)
+        self.Other_cone_sub = rospy.Subscriber('recv/ConeState',    ConeState,  self.proximity_check)
+
         self.cmd_timeout    = 2.5
         self.last_cmd_time  = rospy.get_time()
         
@@ -59,6 +60,25 @@ class ConeStateManager:
         #     2 - Idling 
         #     3 - Returning 
         #     4 - Home 
+
+
+    def proximity_check(self,msg):
+        if self.state.mode == 1 and msg.mode == 1:
+            if self.state.cone_num > msg.cone_num:
+                dist = math.sqrt( ( self.state.pos.x - msg.pos.x)**2 + \
+                                    self.state.pos.y - msg.pos.y)**2)
+                if dist < 5:
+                    self.state.proximity_alarm = True
+                else:
+                    self.state.proximity_alarm = False
+        elif self.state.mode == 3 and msg.mode == 3:
+            if self.state.cone_num < msg.cone_num:
+                dist = math.sqrt( ( self.state.pos.x - msg.pos.x)**2 + \
+                                    self.state.pos.y - msg.pos.y)**2)
+                if dist < 5:
+                    self.state.proximity_alarm = True
+                else:
+                    self.state.proximity_alarm = False
 
     def update_path_end(self, msg):
         self.path_end = msg 
