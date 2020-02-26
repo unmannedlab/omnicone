@@ -65,16 +65,16 @@ class ConeStateManager:
     def proximity_check(self,msg):
         if self.state.mode == 1 and msg.mode == 1:
             if self.state.cone_num > msg.cone_num:
-                dist = math.sqrt( ( self.state.pos.x - msg.pos.x)**2 + \
-                                    self.state.pos.y - msg.pos.y)**2)
+                dist = math.sqrt(  (self.state.pos.x - msg.pos.x)**2 + \
+                                   (self.state.pos.y - msg.pos.y)**2)
                 if dist < 5:
                     self.state.proximity_alarm = True
                 else:
                     self.state.proximity_alarm = False
         elif self.state.mode == 3 and msg.mode == 3:
             if self.state.cone_num < msg.cone_num:
-                dist = math.sqrt( ( self.state.pos.x - msg.pos.x)**2 + \
-                                    self.state.pos.y - msg.pos.y)**2)
+                dist = math.sqrt(  (self.state.pos.x - msg.pos.x)**2 + \
+                                   (self.state.pos.y - msg.pos.y)**2)
                 if dist < 5:
                     self.state.proximity_alarm = True
                 else:
@@ -113,9 +113,9 @@ class ConeStateManager:
 
 
     def update_EKF_state(self,msg):
-        self.cone_state.pos = Pose2D(   msg.linear.x, \
-                                        msg.linear.y, \
-                                        msg.linear.z)
+        self.state.pos = Pose2D(msg.linear.x, \
+                                msg.linear.y, \
+                                msg.linear.z)
 
 
     def run(self):
