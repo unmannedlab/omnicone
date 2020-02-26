@@ -37,7 +37,7 @@ class ConeStateManager:
 
         self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
 
-        self.hpposllh_sub   = rospy.Subscriber('UBX/hpposllh',      Vector3,    self.update_hpposllh)
+        self.hpposllh_sub   = rospy.Subscriber('UBX/hpposllh',      hpposllh,   self.update_hpposllh)
         self.kill_sub       = rospy.Subscriber('Cone_Command/Kill', Bool,       self.update_kill_cmd)
         self.state_sub      = rospy.Subscriber('Cone_Command/State',Int8,       self.update_state_cmd)
         self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,      self.update_EKF_state)
