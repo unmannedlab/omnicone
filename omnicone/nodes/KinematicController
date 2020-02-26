@@ -22,12 +22,12 @@ class KinematicController:
         # Paramters
         self.circumference = pi * 0.101                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
-        self.command_timeout = 1.0                          # sec
+        self.command_timeout = 2.5                          # sec
 
         # Create the command publishers
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
+        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command2' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command2' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command2', Float64, queue_size=10)
         self.Kine_pub  = rospy.Publisher('KControl/PathEnd'                       , Bool,    queue_size=10)
 
         # Create the state and path subscribers
@@ -36,8 +36,7 @@ class KinematicController:
         self.cone_state_sub  = rospy.Subscriber('/ConeState', ConeState, self.update_cone_state)
 
         # Initialize persistent variables
-        self.cmd_vel  = [0.0, 0.0, 0.0]
-        self.cmd_vel2 = [0.0, 0.0, 0.0]
+        self.cmd_vel = [0.0, 0.0, 0.0]
         self.last_cmd_time = rospy.get_time()
         self.Waypoints = Path()
         self.path_index = 1
@@ -77,7 +76,7 @@ class KinematicController:
         #     on the path is found and control and error velocities are 
         #     controlled to that section of the path. 
 
-        if not self.Waypoints:
+        if self.Waypoints:
             # Look for closest point and update global velocity goal
             dist_min = 10e9 
 
@@ -198,11 +197,16 @@ class KinematicController:
             if ( rospy.get_time() - self.last_cmd_time > self.command_timeout):
                 self.cmd_vel = [0.0, 0.0, 0.0]
 
-            if self.cone_status.mode != 0 and not self.cone_status.proximity_alarm:
+            elif self.cone_status.mode != 0 and not self.cone_status.proximity_alarm:
                 self.left_pub.publish( self.cmd_vel[0])
                 self.back_pub.publish( self.cmd_vel[1])
                 self.right_pub.publish(self.cmd_vel[2])
                 self.Kine_pub.publish( self.path_end)
+
+            # else: 
+            #     self.left_pub.publish( 0.0)
+            #     self.back_pub.publish( 0.0)
+            #     self.right_pub.publish(0.0)
             rate.sleep()
 
 

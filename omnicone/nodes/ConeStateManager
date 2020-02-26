@@ -1,25 +1,24 @@
 #!/usr/bin/env python
 
-# Initialize Position:
-#     Once accuracy reaches certain level, wait 1 minute 
-#     Average positions and publish as home coordinates
-
 # States:
-#     Initialization:
+#     0 - Initialization:
 #         EKF waits for home position before publishing
 #         Ends when EKF publishes first position estimate 
-#     Deploy: 
+# 
+#     1 - Deploy: 
 #         Following path
 #         Listening to forward device
 #         Stops if too close 
-#     Idle:
+# 
+#     2 - Idle:
 #         Waiting for signal
-#     Return:
+#     
+#     3 - Return:
 #         Follow path in reverse 
 #         Listening to forward device
 #         Stops if too close 
-
-# Need check for proximity and import of transported message
+# 
+#     4 - Complete
 
 import math
 import rospy
@@ -46,13 +45,13 @@ class ConeStateManager:
 
         self.cmd_timeout    = 2.5
         self.last_cmd_time  = rospy.get_time()
-        
+        self.path_end       = False
+
         self.hpposllh       = hpposllh()
         self.kill_switch    = 0
-        self.state_cmd      = 0
         self.state          = ConeState(rospy.get_param('~Cone_number'), False, 0, False, Pose2D(0,0,0), Vector3(0,0,0))
 
-        rospy.sleep(10.)
+        # rospy.sleep(10.)
 
         # System Modes
         #     0 - Initializing  
@@ -63,11 +62,16 @@ class ConeStateManager:
 
 
     def proximity_check(self,msg):
+        # Proximity Alarm
+        # Description:
+        #     Function check, if deploying or returning, if it will run into the 
+        #     next closest platform. If within 3 meters, platform in rear will stop.   
+
         if self.state.mode == 1 and msg.mode == 1:
             if self.state.cone_num > msg.cone_num:
                 dist = math.sqrt(  (self.state.pos.x - msg.pos.x)**2 + \
                                    (self.state.pos.y - msg.pos.y)**2)
-                if dist < 5:
+                if dist < 3:
                     self.state.proximity_alarm = True
                 else:
                     self.state.proximity_alarm = False
@@ -80,8 +84,10 @@ class ConeStateManager:
                 else:
                     self.state.proximity_alarm = False
 
+
     def update_path_end(self, msg):
-        self.path_end = msg 
+        self.path_end = msg.data
+
 
     def update_kill_cmd(self, msg):
         self.kill_switch    = msg
@@ -89,15 +95,18 @@ class ConeStateManager:
 
 
     def update_state_cmd(self,msg):
-        self.state_cmd      = msg
+        # State Machine 
+        # Description:
+        #     Function checks the state machine conditions and advances
+        #     the state when appropriate. 
 
         if self.state.mode == 1:
-            if self.state_cmd == 3:
+            if msg.data == 3:
                 self.state.mode = 3
             elif self.path_end:
                 self.state.mode == 2
 
-        elif self.state.mode == 2 and self.state_cmd == 3:
+        elif self.state.mode == 2 and msg.data == 3:
             self.state.mode = 3
 
         elif self.state.mode == 3 and self.path_end:
@@ -105,6 +114,11 @@ class ConeStateManager:
 
 
     def update_hpposllh(self,msg):
+        # Home Position Initialization
+        # Description:
+        #     Function checks if position error is less than 4 cm and if 
+        #     so, sets that position as home, (0,0) in (x,y).  
+        
         if self.state.mode == 0 and msg.err.lon < 0.04:
             self.state.home.x = msg.llh.lon 
             self.state.home.y = msg.llh.lat 
