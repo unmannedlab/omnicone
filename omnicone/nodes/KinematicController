@@ -20,7 +20,7 @@ class KinematicController:
         rospy.init_node('KinematicController')
 
         # Paramters
-        self.circumference = pi * 0.101                     # meters
+        self.circumference = pi * 0.201                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 2.5                          # sec
 
