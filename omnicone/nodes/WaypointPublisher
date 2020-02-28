@@ -74,5 +74,5 @@ class WaypointPublisher:
 
 
 if __name__ == '__main__':
-    WayPub = WaypointPublisher(os.path.join('..','paths', "SquarePath.csv") ) 
+    WayPub = WaypointPublisher(os.path.join('..','paths', "NorthLine_1.csv") ) 
     WayPub.run()
