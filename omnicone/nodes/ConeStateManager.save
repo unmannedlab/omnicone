@@ -3,21 +3,20 @@
 # States:
 #     0 - Initialization:
 #         EKF waits for home position before publishing
-#         Ends when EKF publishes first position estimate
-#
-#     1 - Deploy:
+#         Ends when EKF publishes first position estimate 
+# 
+#     1 - Deploy: 
 #         Following path
 #         Listening to forward device
-#         Stops if too close
-#
+#         Stops if too close 
+# 
 #     2 - Idle:
 #         Waiting for signal
-#
+#     
 #     3 - Return:
 #         Follow path in reverse
 #         Listening to forward device
-#         Stops if too close
-#
+#         Stops if too close # 
 #     4 - Complete
 
 import math
@@ -54,11 +53,11 @@ class ConeStateManager:
         # rospy.sleep(10.)
 
         # System Modes
-        #     0 - Initializing
-        #     1 - Deploying
-        #     2 - Idling
-        #     3 - Returning
-        #     4 - Home
+        #     0 - Initializing  
+        #     1 - Deploying 
+        #     2 - Idling 
+        #     3 - Returning 
+        #     4 - Home 
 
 
     def proximity_check(self,msg):
@@ -95,10 +94,10 @@ class ConeStateManager:
 
 
     def update_state_cmd(self,msg):
-        # State Machine
+        # State Machine 
         # Description:
         #     Function checks the state machine conditions and advances
-        #     the state when appropriate.
+        #     the state when appropriate. 
 
         if self.state.mode == 1:
             if msg.data == 3:
@@ -116,13 +115,13 @@ class ConeStateManager:
     def update_hpposllh(self,msg):
         # Home Position Initialization
         # Description:
-        #     Function checks if position error is less than 4 cm and if
-        #     so, sets that position as home, (0,0) in (x,y).
-
+        #     Function checks if position error is less than 4 cm and if 
+        #     so, sets that position as home, (0,0) in (x,y).  
+        
         if self.state.mode == 0 and msg.err.lon < 0.04:
-            self.state.home.x = msg.llh.lon
-            self.state.home.y = msg.llh.lat
-            self.state.mode = 1
+            self.state.home.x = msg.llh.lon 
+            self.state.home.y = msg.llh.lat 
+            self.state.mode = 1 
             self.state.init = True
 
 
