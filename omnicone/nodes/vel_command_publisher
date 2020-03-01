@@ -26,9 +26,9 @@ class VelCommander:
         self.command_timeout = 1.0                          # sec
 
         # create the publisher for each individual motor velocity
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
+        self.left_pub  = rospy.Publisher('left_joint/command' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint/command' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint/command', Float64, queue_size=10)
 
         # create the subscriber for the goal velocity
         self.vel_goal_sub = rospy.Subscriber('/robot_vel_goal', Pose2D, self.updateVels)

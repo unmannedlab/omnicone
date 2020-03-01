@@ -23,9 +23,9 @@ class ConeEKF:
         self.UBX_error_gain = 20
 
         # create subscribers
-        self.left_enc_sub    = rospy.Subscriber( '/left_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_left)
-        self.back_enc_sub    = rospy.Subscriber( '/back_joint_velocity_controller/absolute_encoder_count', Int32, self.updateEnc_back)
-        self.right_enc_sub   = rospy.Subscriber('/right_joint_velocity_controller/absolute_encoder_count', Int32, self.predict_step)
+        self.left_enc_sub    = rospy.Subscriber( '/left_joint/absolute_encoder_count', Int32, self.updateEnc_left)
+        self.back_enc_sub    = rospy.Subscriber( '/back_joint/absolute_encoder_count', Int32, self.updateEnc_back)
+        self.right_enc_sub   = rospy.Subscriber('/right_joint/absolute_encoder_count', Int32, self.predict_step)
         self.UBX_llh_llh_sub = rospy.Subscriber('/UBX/hpposllh', hpposllh, self.update_hpposllh)
         self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2D', relpos2D, self.update_step)
         self.cone_state_sub  = rospy.Subscriber('/ConeState',   ConeState, self.update_cone_state)
@@ -42,43 +42,50 @@ class ConeEKF:
 
         self.state = np.array([[0.0],[0.0],[180.0],[0.0],[0.0],[0.0]])
 
-        self.Process_Q = np.array([ [ 0.0052978353,	 0.0006674407, -0.0994325658,  0.0002413208,  0.0000275520,  0.0695277024],\
-                                    [ 0.0006674407,	 0.0003035962, -0.0149129946, -0.0000231930, -0.0000157740,  0.003400838],\
-                                    [-0.0994325658,	-0.0149129946,	5.7810347696,  0.0041777458,  0.0050111468,  0.2524022406],\
-                                    [ 0.0002413208, -0.0000231930,	0.0041777458,  0.0003084370,  0.0000982770,  0.0157525239],\
-                                    [ 0.0000275520,	-0.0000157740,	0.0050111468,  0.0000982770,  0.0001116568,  0.0039943337],\
-                                    [ 0.0695277024,  0.0034008380,	0.2524022406,  0.0157525239,  0.0039943337,  8.8239143428]])
+        self.Q = np.array( [ \
+            [ 5.30E-03, 6.67E-04,-9.94E-02, 2.41E-04, 2.76E-05, 6.95E-02],\
+            [ 6.67E-04, 3.04E-04,-1.49E-02,-2.32E-05,-1.58E-05, 3.40E-03],\
+            [-9.94E-02,-1.49E-02, 5.78E+00, 4.18E-03, 5.01E-03, 2.52E-01],\
+            [ 2.41E-04,-2.32E-05, 4.18E-03, 3.08E-04, 9.83E-05, 1.58E-02],\
+            [ 2.76E-05,-1.58E-05, 5.01E-03, 9.83E-05, 1.12E-04, 3.99E-03],\
+            [ 6.95E-02, 3.40E-03, 2.52E-01, 1.58E-02, 3.99E-03, 8.82E+00]])
 
-        self.state_cov = self.Process_Q
 
-        self.Transition_F = np.array([  [1.0, 0.0, 0.0, 0.2, 0.0, 0.0 ], \
-                                        [0.0, 1.0, 0.0, 0.0, 0.2, 0.0 ], \
-                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.2 ], \
-                                        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0 ], \
-                                        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0 ], \
-                                        [0.0, 0.0, 0.0, 0.0, 0.0, 1.0 ]])
+        self.state_cov = self.Q
+
+        self.F = np.array([ \
+            [1.0, 0.0, 0.0, 0.2, 0.0, 0.0 ], \
+            [0.0, 1.0, 0.0, 0.0, 0.2, 0.0 ], \
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.2 ], \
+            [0.0, 0.0, 0.0, 1.0, 0.0, 0.0 ], \
+            [0.0, 0.0, 0.0, 0.0, 1.0, 0.0 ], \
+            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0 ]])
 
         # State Observation Matrix is Constant
-        self.Observation_H = np.array([ [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
-                                        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], \
-                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])
+        self.H = np.array([ \
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
+            [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], \
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])
 
-        self.Kalman_gain_K = np.array([ [1.0, 0.0, 0.0], \
-                                        [0.0, 1.0, 0.0], \
-                                        [0.0, 0.0, 1.0], \
-                                        [0.0, 0.0, 0.0], \
-                                        [0.0, 0.0, 0.0], \
-                                        [0.0, 0.0, 0.0]])
+        self.K = np.array([ \
+            [1.0, 0.0, 0.0], \
+            [0.0, 1.0, 0.0], \
+            [0.0, 0.0, 1.0], \
+            [0.0, 0.0, 0.0], \
+            [0.0, 0.0, 0.0], \
+            [0.0, 0.0, 0.0]])
 
-        self.Observation_cov_R = np.array([ [0.3, 0.0, 0.0], \
-                                            [0.0, 0.3, 0.0], \
-                                            [0.0, 0.0, 4.0]])
+        self.R = np.array([ \
+            [0.3, 0.0, 0.0], \
+            [0.0, 0.3, 0.0], \
+            [0.0, 0.0, 4.0]])
 
-        self.innovation_res_y = np.array([  [0],[0],[0]])
+        self.y = np.array([  [0],[0],[0]])
 
-        self.innovation_cov_S = np.array([  [1.0, 0.0, 0.0], \
-                                            [0.0, 1.0, 0.0], \
-                                            [0.0, 0.0, 1.0]])
+        self.S = np.array([ \
+            [1.0, 0.0, 0.0], \
+            [0.0, 1.0, 0.0], \
+            [0.0, 0.0, 1.0]])
 
 
     def update_cone_state(self,msg):
@@ -86,7 +93,9 @@ class ConeEKF:
         if not self.cone_init and msg.init:
             self.cone_init = True
             self.lon_home = msg.home.x
+            self.lon      = msg.home.x
             self.lat_home = msg.home.y
+            self.lat      = msg.home.y
 
 
     def update_hpposllh(self, msg):
@@ -101,8 +110,8 @@ class ConeEKF:
         self.lat =      msg.llh.lat
         self.height =   msg.llh.height
 
-        self.Observation_cov_R[0,0] = msg.err.lon * self.UBX_error_gain
-        self.Observation_cov_R[1,1] = msg.err.lat * self.UBX_error_gain
+        self.R[0,0] = msg.err.lon * self.UBX_error_gain
+        self.R[1,1] = msg.err.lat * self.UBX_error_gain
 
 
     def updateEnc_left(self, msg):
@@ -153,10 +162,11 @@ class ConeEKF:
         self.time_curr = rospy.get_time()
 
         # Determine Rotation Angle of Each Motor
-        # num encoder counts / (4 counts / cycle ) / ( 7 * 27 cycles / rev) (2pi rad / rev)
-        theta_l = -float(self.enc_curr[0] - self.enc_prev[0]) / 4 / (7 * 27) * (2 * pi)
-        theta_b = -float(self.enc_curr[1] - self.enc_prev[1]) / 4 / (7 * 27) * (2 * pi)
-        theta_r = -float(self.enc_curr[2] - self.enc_prev[2]) / 4 / (7 * 27) * (2 * pi)
+        # count / (4 count / cycle ) / ( 7 * 27 cycles / rev) * (2pi rad / rev)
+        rev_per_count = (2 * pi) / 4 / (7 * 27)
+        theta_l = -float(self.enc_curr[0] - self.enc_prev[0]) * rev_per_count
+        theta_b = -float(self.enc_curr[1] - self.enc_prev[1]) * rev_per_count
+        theta_r = -float(self.enc_curr[2] - self.enc_prev[2]) * rev_per_count
 
         # Convert Angular to Linear
         # v_linear = omega * d / 2
@@ -193,7 +203,7 @@ class ConeEKF:
         self.time_prev = self.time_curr
 
         # P_k|k-1 = F_k * P_k-1|k-1 * F_k^T + Q_k
-        self.state_cov = np.matmul(self.Transition_F, np.matmul(self.state_cov, np.transpose(self.Transition_F))) + self.Process_Q
+        self.state_cov = np.matmul(self.F, np.matmul(self.state_cov, np.transpose(self.F))) + self.Q
 
 
     def update_step(self, msg):
@@ -204,40 +214,41 @@ class ConeEKF:
         #     measurement of the vehicle heading is used in the update step in
         #     the Kalman filter.
 
-        # Update state and observation covariance values
-        self.Observation_cov_R[2,2] = msg.err.theta * self.UBX_error_gain
+        if self.cone_init:
+            # Update state and observation covariance values
+            self.R[2,2] = msg.err.theta * self.UBX_error_gain
 
-        # Ellipsoidal model calculation of Earth
-        a = 6378137.0
-        b = 6356752.3142
-        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(self.lat*pi/180), 2)+ \
-                        math.pow( math.pow(b,2) * math.sin(self.lat*pi/180), 2))/ \
-                       (math.pow( a * math.cos(self.lat*pi/180), 2)+ \
-                        math.pow( b * math.sin(self.lat*pi/180), 2))) + self.height
+            # Ellipsoidal model calculation of Earth
+            a = 6378137.0
+            b = 6356752.3142
+            R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(self.lat*pi/180), 2)+ \
+                            math.pow( math.pow(b,2) * math.sin(self.lat*pi/180), 2))/ \
+                        (math.pow( a * math.cos(self.lat*pi/180), 2)+ \
+                            math.pow( b * math.sin(self.lat*pi/180), 2))) + self.height
 
-        # Transform LLH to 2D position
-        dlon = self.lon - self.lon_home    # degrees
-        dlat = self.lat - self.lat_home    # degrees
-        dE = R * math.radians(dlon)     # meters
-        dN = R * math.radians(dlat)     # meters
+            # Transform LLH to 2D position
+            dlon = self.lon - self.lon_home    # degrees
+            dlat = self.lat - self.lat_home    # degrees
+            dE = R * math.radians(dlon)     # meters
+            dN = R * math.radians(dlat)     # meters
 
-        # Measurement in matrix format
-        measurement = np.array([[dE],[dN],[msg.pos.theta]])
+            # Measurement in matrix format
+            measurement = np.array([[dE],[dN],[msg.pos.theta]])
 
-        # y_k       = z_k - h(xhat_k|k-1)
-        self.innovation_res_y = measurement - np.matmul(self.Observation_H, self.state)
+            # y_k       = z_k - h(xhat_k|k-1)
+            self.y = measurement - np.matmul(self.H, self.state)
 
-        # S_k       = H_k * P_k|k-1 * H_k^T + R_kError
-        self.innovation_cov_S = np.matmul(self.Observation_H, np.matmul(self.state_cov, np.transpose(self.Observation_H))) + self.Observation_cov_R
+            # S_k       = H_k * P_k|k-1 * H_k^T + R_kError
+            self.S = np.matmul(self.H, np.matmul(self.state_cov, np.transpose(self.H))) + self.R
 
-        # K_k       = P_k|k-1 * H_k^T * S_k^-1
-        self.Kalman_gain_K = np.matmul(self.state_cov, np.matmul(np.transpose(self.Observation_H), np.linalg.inv(self.innovation_cov_S)))
+            # K_k       = P_k|k-1 * H_k^T * S_k^-1
+            self.K = np.matmul(self.state_cov, np.matmul(np.transpose(self.H), np.linalg.inv(self.S)))
 
-        # xhat_k|k  = xhat_k|k-1 + K_k * y_k
-        self.state = self.state + np.matmul(self.Kalman_gain_K, self.innovation_res_y)
+            # xhat_k|k  = xhat_k|k-1 + K_k * y_k
+            self.state = self.state + np.matmul(self.K, self.y)
 
-        # P_k|k     = (I - K_k * H_k) * P_k|k-1
-        self.state_cov = np.matmul((np.eye(6) - np.matmul(self.Kalman_gain_K, self.Observation_H)), self.state_cov)
+            # P_k|k     = (I - K_k * H_k) * P_k|k-1
+            self.state_cov = np.matmul((np.eye(6) - np.matmul(self.K, self.H)), self.state_cov)
 
     def run(self):
         # State Estimation Publisher

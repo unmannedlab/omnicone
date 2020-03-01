@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# States:
+# Modes:
 #     0 - Initialization:
 #         EKF waits for home position before publishing
 #         Ends when EKF publishes first position estimate
@@ -41,23 +41,14 @@ class ConeStateManager:
         self.state_sub      = rospy.Subscriber('Cone_Command/State',Int8,       self.update_state_cmd)
         self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,      self.update_EKF_state)
         self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,       self.update_path_end)
-        self.Other_cone_sub = rospy.Subscriber('Cone1/ConeState',    ConeState,  self.proximity_check)
+        self.Other_cone_sub = rospy.Subscriber('recv/ConeState',   ConeState,  self.proximity_check)
 
         self.cmd_timeout    = 2.5
         self.last_cmd_time  = rospy.get_time()
         self.path_end       = False
 
         self.hpposllh       = hpposllh()
-        self.state          = ConeState(rospy.get_param('~Cone_number'), False, 0, False, False, Pose2D(0,0,0), Vector3(0,0,0))
-
-        # rospy.sleep(10.)
-
-        # System Modes
-        #     0 - Initializing
-        #     1 - Deploying
-        #     2 - Idling
-        #     3 - Returning
-        #     4 - Home
+        self.state          = ConeState(rospy.get_param('~Cone_number'), False,0, False, False, Pose2D(0,0,0), Vector3(0,0,0))
 
 
     def proximity_check(self,msg):

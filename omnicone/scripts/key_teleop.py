@@ -60,7 +60,7 @@ class TextWindow():
 
     def write_line(self, lineno, message):
         if lineno < 0 or lineno >= self._num_lines:
-            raise ValueError, 'lineno out of bounds'
+            raise ValueError('lineno out of bounds')
         height, width = self._screen.getmaxyx()
         y = (height / self._num_lines) * lineno
         x = 10
@@ -171,7 +171,7 @@ class KeyTeleop():
         self._interface.write_line(5, 'Use arrow keys to move, space to stop, q to exit.')
         self._interface.refresh()
 
-        twist = self._get_twist(self._linear, self._angular)
+        # twist = self._get_twist(self._linear, self._angular)
         self._pub_cmd.publish(Pose2D)
 
 class SimpleKeyTeleop():

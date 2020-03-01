@@ -25,9 +25,9 @@ class KinematicController:
         self.command_timeout = 2.5                          # sec
 
         # Create the command publishers
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
+        self.left_pub  = rospy.Publisher('left_joint/command' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint/command' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint/command', Float64, queue_size=10)
         self.Kine_pub  = rospy.Publisher('KControl/PathEnd'                       , Bool,    queue_size=10)
 
         # Create the state and path subscribers
@@ -83,7 +83,7 @@ class KinematicController:
             for i in range(max(0,self.path_index-2), \
                             min(self.path_index+8,len(self.Waypoints.poses)-1)):
                 distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-                                        (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
+                                     (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
                 if distance < dist_min:
                     dist_min = distance
                     self.path_index = i
@@ -129,7 +129,7 @@ class KinematicController:
                 self.cmd_vel[2] = -resp[2] * self.linear_to_rot  
 
             else:
-                # Calculate Line equation between P1 and P2 in the following form:
+                # Calculate Line equation between P1 and P2 in the form:
                 #     a*x + b*y + c = 0
                 a = y1 - y2
                 b = x2 - x1 
