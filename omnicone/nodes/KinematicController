@@ -20,14 +20,14 @@ class KinematicController:
         rospy.init_node('KinematicController')
 
         # Paramters
-        self.circumference = pi * 0.101                     # meters
+        self.circumference = pi * 0.201                     # meters
         self.linear_to_rot = 2 * pi / self.circumference    # rad / m
         self.command_timeout = 2.5                          # sec
 
         # Create the command publishers
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command2' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command2' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command2', Float64, queue_size=10)
+        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command', Float64, queue_size=10)
         self.Kine_pub  = rospy.Publisher('KControl/PathEnd'                       , Bool,    queue_size=10)
 
         # Create the state and path subscribers
