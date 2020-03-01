@@ -197,16 +197,14 @@ class KinematicController:
             if ( rospy.get_time() - self.last_cmd_time > self.command_timeout):
                 self.cmd_vel = [0.0, 0.0, 0.0]
 
-            elif self.cone_status.mode != 0 and not self.cone_status.proximity_alarm:
+            elif self.cone_status.mode != 0 and \
+                    not self.cone_status.kill_switch and \
+                    not self.cone_status.proximity_alarm:
                 self.left_pub.publish( self.cmd_vel[0])
                 self.back_pub.publish( self.cmd_vel[1])
                 self.right_pub.publish(self.cmd_vel[2])
                 self.Kine_pub.publish( self.path_end)
 
-            # else: 
-            #     self.left_pub.publish( 0.0)
-            #     self.back_pub.publish( 0.0)
-            #     self.right_pub.publish(0.0)
             rate.sleep()
 
 

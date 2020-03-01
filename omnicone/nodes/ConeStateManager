@@ -48,8 +48,7 @@ class ConeStateManager:
         self.path_end       = False
 
         self.hpposllh       = hpposllh()
-        self.kill_switch    = 0
-        self.state          = ConeState(rospy.get_param('~Cone_number'), False, 0, False, Pose2D(0,0,0), Vector3(0,0,0))
+        self.state          = ConeState(rospy.get_param('~Cone_number'), False, 0, False, False, Pose2D(0,0,0), Vector3(0,0,0))
 
         # rospy.sleep(10.)
 
@@ -90,8 +89,8 @@ class ConeStateManager:
 
 
     def update_kill_cmd(self, msg):
-        self.kill_switch    = msg
-        self.last_beat      = rospy.get_time()
+        self.state.kill_switch  = msg
+        self.last_beat          = rospy.get_time()
 
 
     def update_state_cmd(self,msg):
@@ -137,7 +136,7 @@ class ConeStateManager:
 
         while(not rospy.is_shutdown()):
             if ( rospy.get_time() - self.last_cmd_time > self.cmd_timeout):
-                self.kill_switch = True
+                self.state.kill_switch = True
 
             self.state_pub.publish(self.state)
 

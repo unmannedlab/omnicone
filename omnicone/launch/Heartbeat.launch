@@ -1,0 +1,34 @@
+<launch>
+
+    <node name="udp_sender_1" pkg="nimbro_topic_transport" type="udp_sender" output="screen">
+
+		<!-- The destination host name or IP address -->
+		<param name="destination_addr" value="192.168.1.11" />
+		<param name="destination_port" value="17000" />
+
+		<!-- Load the list of topics from a YAML file -->
+		<rosparam command="load" file="$(find omnicone)/config/control_topics.yaml" />
+	</node>
+
+    <node name="udp_sender_2" pkg="nimbro_topic_transport" type="udp_sender" output="screen">
+
+		<!-- The destination host name or IP address -->
+		<param name="destination_addr" value="192.168.1.12" />
+		<param name="destination_port" value="17000" />
+
+		<!-- Load the list of topics from a YAML file -->
+		<rosparam command="load" file="$(find omnicone)/config/control_topics.yaml" />
+	</node>
+   
+	<node name="udp_receiver_1" pkg="nimbro_topic_transport" type="udp_receiver" output="screen">
+		<param name="port" value="17001" />
+		<remap from="/ConeState" to="/Cone1/ConeState" />
+	</node>
+
+	<node name="udp_receiver_2" pkg="nimbro_topic_transport" type="udp_receiver" output="screen">
+		<param name="port" value="17002" />
+		<remap from="/ConeState" to="/Cone2/ConeState" />
+	</node>
+
+
+</launch>
