@@ -41,11 +41,11 @@ class ConeStateManager:
         self.state_sub      = rospy.Subscriber('Cone_Command/State',Int8,       self.update_state_cmd)
         self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,      self.update_EKF_state)
         self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,       self.update_path_end)
-        self.Other_cone_sub = rospy.Subscriber('recv/ConeState',   ConeState,  self.proximity_check)
+        self.Other_cone_sub = rospy.Subscriber('recv/ConeState',    ConeState,  self.proximity_check)
 
         self.cmd_timeout    = 2.5
-        self.last_cmd_time  = rospy.get_time()
         self.path_end       = False
+        self.last_beat      = rospy.get_time()
 
         self.hpposllh       = hpposllh()
         self.state          = ConeState(rospy.get_param('~Cone_number'), False,0, False, False, Pose2D(0,0,0), Vector3(0,0,0))
@@ -54,8 +54,8 @@ class ConeStateManager:
     def proximity_check(self,msg):
         # Proximity Alarm
         # Description:
-        #     Function check, if deploying or returning, if it will run into the 
-        #     next closest platform. If within 3 meters, platform in rear will stop.   
+        #     Function check, if deploying or returning, if it will run into the
+        #     next closest platform. If within 3 meters, platform in rear will stop.
 
         if self.state.mode == 1 and msg.mode == 1:
             if self.state.cone_num > msg.cone_num:
@@ -80,7 +80,7 @@ class ConeStateManager:
 
 
     def update_kill_cmd(self, msg):
-        self.state.kill_switch  = msg
+        self.state.kill_switch  = msg.data
         self.last_beat          = rospy.get_time()
 
 
@@ -126,7 +126,7 @@ class ConeStateManager:
         rate = rospy.Rate(10) # 10 Hz
 
         while(not rospy.is_shutdown()):
-            if ( rospy.get_time() - self.last_cmd_time > self.cmd_timeout):
+            if ( rospy.get_time() - self.last_beat > self.cmd_timeout):
                 self.state.kill_switch = True
 
             self.state_pub.publish(self.state)
