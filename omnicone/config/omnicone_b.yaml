@@ -3,7 +3,7 @@ command_timeout: 0.5
 
 motors: [
     {
-    name: 'back_joint_velocity_controller',
+    name: 'back_joint',
     motor_reversed: false,
     max_speed: 100,
     max_acceleration: 750,

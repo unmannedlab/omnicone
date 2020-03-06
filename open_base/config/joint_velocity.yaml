@@ -4,17 +4,17 @@ open_base:
         type: joint_state_controller/JointStateController
         publish_rate: 100
 
-    left_joint_velocity_controller:
+    left_joint:
         type: effort_controllers/JointVelocityController
         joint: left_rim_joint
         pid: {p: 0.001, i: 0.0, d: 0.0}
 
-    back_joint_velocity_controller:
+    back_joint:
         type: effort_controllers/JointVelocityController
         joint: back_rim_joint
         pid: {p: 0.001, i: 0.0, d: 0.0}
 
-    right_joint_velocity_controller:
+    right_joint:
         type: effort_controllers/JointVelocityController
         joint: right_rim_joint
         pid: {p: 0.001, i: 0.0, d: 0.0}

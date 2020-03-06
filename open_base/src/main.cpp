@@ -412,9 +412,9 @@ int main(int argc, char **argv) {
     kinematicsInverseMobileClient = node.serviceClient<open_base::KinematicsInverse>("kinematics_inverse_mobile");
     kinematicsInverseWorldClient  = node.serviceClient<open_base::KinematicsInverse>("kinematics_inverse_world" );
     kinematicsMobileToWorldClient = node.serviceClient<open_base::FrameToFrame>("kinematics_mobile_to_world");
-    v_leftCommand  = node.advertise<std_msgs::Float64>("left_joint_velocity_controller/command", 1);
-    v_backCommand  = node.advertise<std_msgs::Float64>("back_joint_velocity_controller/command", 1);
-    v_rightCommand = node.advertise<std_msgs::Float64>("right_joint_velocity_controller/command", 1);
+    v_leftCommand  = node.advertise<std_msgs::Float64>("left_joint/command", 1);
+    v_backCommand  = node.advertise<std_msgs::Float64>("back_joint/command", 1);
+    v_rightCommand = node.advertise<std_msgs::Float64>("right_joint/command", 1);
     ros::Subscriber poseWorldSubscriber  = node.subscribe("pose/world" , 1, onPoseWorldMessage );
     ros::Subscriber poseMobileSubscriber = node.subscribe("pose/mobile", 1, onPoseMobileMessage);
     ros::Subscriber command = node.subscribe("command", 1, onCommandMessage);

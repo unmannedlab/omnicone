@@ -30,7 +30,7 @@
 		type="spawner"
 		respawn="false"
 		output="screen"
-		args="joint_state_controller left_joint_velocity_controller back_joint_velocity_controller right_joint_velocity_controller"
+		args="joint_state_controller left_joint back_joint right_joint"
 		ns="/open_base"
 	/>
 	<node

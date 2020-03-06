@@ -13,9 +13,9 @@ class KinematicController:
     def __init__(self):
         # Kinematic Controller object initialization
         # Description:
-        #     Function inializes the Kinematic Controller object. Subscribes 
-        #     to state and path and publsihes commands. Initializes persistent 
-        #     variables.   
+        #     Function inializes the Kinematic Controller object. Subscribes
+        #     to state and path and publsihes commands. Initializes persistent
+        #     variables.
 
         rospy.init_node('KinematicController')
 
@@ -25,9 +25,9 @@ class KinematicController:
         self.command_timeout = 2.5                          # sec
 
         # Create the command publishers
-        self.left_pub  = rospy.Publisher('left_joint_velocity_controller/command2' , Float64, queue_size=10)
-        self.back_pub  = rospy.Publisher('back_joint_velocity_controller/command2' , Float64, queue_size=10)
-        self.right_pub = rospy.Publisher('right_joint_velocity_controller/command2', Float64, queue_size=10)
+        self.left_pub  = rospy.Publisher('left_joint/command' , Float64, queue_size=10)
+        self.back_pub  = rospy.Publisher('back_joint/command' , Float64, queue_size=10)
+        self.right_pub = rospy.Publisher('right_joint/command', Float64, queue_size=10)
         self.Kine_pub  = rospy.Publisher('KControl/PathEnd'                       , Bool,    queue_size=10)
 
         # Create the state and path subscribers
@@ -46,7 +46,7 @@ class KinematicController:
         # Kinematic Controller Values
         self.K_err = 1
         self.K_theta = 0.4
-        self.desired_speed = 0.25 # m/s
+        self.desired_speed = 0.75 # m/s
 
 
     def update_cone_state(self,msg):
@@ -60,7 +60,7 @@ class KinematicController:
     def updatePath(self, msg):
         # Update Desired Path
         # Description:
-        #     Function updates the internal desired path for the robot. 
+        #     Function updates the internal desired path for the robot.
         #     If returning, reverses the direction of the path.
         if self.cone_status.mode == 3:
             self.Waypoints.poses = msg.poses[::-1]
@@ -72,22 +72,22 @@ class KinematicController:
         # Update Command Velocities
         # Description:
         #     Function uses EKF state information and desired path to publish
-        #     command velocities using a kinematic controller. The nearest point 
-        #     on the path is found and control and error velocities are 
-        #     controlled to that section of the path. 
+        #     command velocities using a kinematic controller. The nearest point
+        #     on the path is found and control and error velocities are
+        #     controlled to that section of the path.
 
         if self.Waypoints:
             # Look for closest point and update global velocity goal
-            dist_min = 10e9 
+            dist_min = 10e9
 
             for i in range(max(0,self.path_index-2), \
                             min(self.path_index+8,len(self.Waypoints.poses)-1)):
                 distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-                                        (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
+                                     (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
                 if distance < dist_min:
                     dist_min = distance
                     self.path_index = i
-            
+
             # P0 - Current state position
             x0 = msg.linear.x
             y0 = msg.linear.y
@@ -102,12 +102,11 @@ class KinematicController:
             Vw = dT / max(abs(dT),30) * self.K_theta
 
             if self.path_index == len(self.Waypoints.poses)-2:
-                # If closest to last point, control to final point and stop 
+                # If closest to last point, control to final point and stop
                 dx_world = x2 - x0
                 dy_world = y2 - y0
                 distance = math.sqrt(dx_world**2 + dy_world**2)
-                
-                if distance < 0.05:
+                if distance < 0.1:
                     self.path_end = True
 
                 # Normalizes velocities to error from final point
@@ -126,20 +125,21 @@ class KinematicController:
                 # Convert to rotational speeds
                 self.cmd_vel[0] = -resp[0] * self.linear_to_rot
                 self.cmd_vel[1] = -resp[1] * self.linear_to_rot
-                self.cmd_vel[2] = -resp[2] * self.linear_to_rot  
+                self.cmd_vel[2] = -resp[2] * self.linear_to_rot
 
             else:
-                # Calculate Line equation between P1 and P2 in the following form:
+                self.path_end = False
+                # Calculate Line equation between P1 and P2 in the form:
                 #     a*x + b*y + c = 0
                 a = y1 - y2
-                b = x2 - x1 
-                c = -a*x1 - b*y1 
-                
+                b = x2 - x1
+                c = -a*x1 - b*y1
+
                 # P3 - Closest point to P0 on line betweeen P1 and P2
                 x3 = (b*(b*x0-a*y0) - a*c) / (a**2 + b**2)
                 y3 = (a*(a*y0-b*x0) - b*c) / (a**2 + b**2)
 
-                # Desired path velocity 
+                # Desired path velocity
                 dx_path = x2 - x1
                 dy_path = y2 - y1
 
@@ -150,7 +150,7 @@ class KinematicController:
 
                 # Error velocity
                 Vx_err  = self.K_err * (x3 - x0)
-                Vy_err  = self.K_err * (y3 - y0)                    
+                Vy_err  = self.K_err * (y3 - y0)
 
                 # Normalize desired and error correction velocities
                 V_world  = math.sqrt((Vx_path + Vx_err)**2 + (Vy_path + Vy_err)**2)
@@ -162,14 +162,14 @@ class KinematicController:
                     Vy_world * math.sin(math.radians(msg.linear.z))
                 Vy = -Vx_world * math.sin(math.radians(msg.linear.z)) - \
                     Vy_world * math.cos(math.radians(msg.linear.z))
-                
+
                 # Transform to joint velocities using inverse kinematics
                 resp = self.InverseKinematics(Vx,Vy,Vw)
 
                 # Convert to rotational speeds
                 self.cmd_vel[0] = -resp[0] * self.linear_to_rot
                 self.cmd_vel[1] = -resp[1] * self.linear_to_rot
-                self.cmd_vel[2] = -resp[2] * self.linear_to_rot           
+                self.cmd_vel[2] = -resp[2] * self.linear_to_rot
 
         self.last_cmd_time = rospy.get_time()
 
@@ -186,9 +186,9 @@ class KinematicController:
     def run(self):
         # Kinematic Controller Publisher
         # Description:
-        #     Function will continually publish control velocities regardless of 
+        #     Function will continually publish control velocities regardless of
         #     EKF callback rate based on latest update. Will stop the robot if
-        #     EKF topic is lost for more than 1 second. Publishes commands as 
+        #     EKF topic is lost for more than 1 second. Publishes commands as
         #     individual joint commands.
 
         rate = rospy.Rate(10) # 10 Hz
@@ -197,16 +197,15 @@ class KinematicController:
             if ( rospy.get_time() - self.last_cmd_time > self.command_timeout):
                 self.cmd_vel = [0.0, 0.0, 0.0]
 
-            elif self.cone_status.mode != 0 and not self.cone_status.proximity_alarm:
+            elif (self.cone_status.mode == 1 \
+                    or self.cone_status.mode == 3) and \
+                    not self.cone_status.kill_switch and \
+                    not self.cone_status.proximity_alarm:
                 self.left_pub.publish( self.cmd_vel[0])
                 self.back_pub.publish( self.cmd_vel[1])
                 self.right_pub.publish(self.cmd_vel[2])
                 self.Kine_pub.publish( self.path_end)
 
-            # else: 
-            #     self.left_pub.publish( 0.0)
-            #     self.back_pub.publish( 0.0)
-            #     self.right_pub.publish(0.0)
             rate.sleep()
 
 

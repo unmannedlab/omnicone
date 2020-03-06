@@ -264,7 +264,7 @@ class Roboteq:
                 rospy.logdebug('<< {}'.format(response_str))
                 return response_str
             except:
-                print("Serial Exception" + self.port)
+                print("Serial Exception" + str(self.port))
                 return ""
 
     def execute_maintenance_command(self, command):
@@ -277,7 +277,7 @@ class Roboteq:
                 rospy.logdebug('<< {}'.format(response_str))
                 return response_str
             except:
-                print("Serial Exception" + self.port)
+                print("Serial Exception" + str(self.port))
                 return ""
 
     def execute_runtime_command(self, command):
@@ -290,7 +290,7 @@ class Roboteq:
                 rospy.logdebug('<< {}'.format(response_str))
                 return response_str
             except:
-                print("Serial Exception" + self.port)
+                print("Serial Exception" + str(self.port))
                 return ""
 
     def execute_query(self, query):
@@ -303,7 +303,7 @@ class Roboteq:
                 rospy.logdebug('<< {}'.format(response_str))
                 return response_str
             except:
-                print("Serial Exception" + self.port)
+                print("Serial Exception" + str(self.port))
                 return ""
 
     def run(self):
