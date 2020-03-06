@@ -61,18 +61,22 @@ class ConeStateManager:
             if self.state.cone_num > msg.cone_num:
                 dist = math.sqrt(  (self.state.pos.x - msg.pos.x)**2 + \
                                    (self.state.pos.y - msg.pos.y)**2)
-                if dist < 3:
+                if dist < 2:
                     self.state.proximity_alarm = True
                 else:
                     self.state.proximity_alarm = False
+            else:
+                self.state.proximity_alarm = False
         elif self.state.mode == 3 and msg.mode == 3:
             if self.state.cone_num < msg.cone_num:
                 dist = math.sqrt(  (self.state.pos.x - msg.pos.x)**2 + \
                                    (self.state.pos.y - msg.pos.y)**2)
-                if dist < 5:
+                if dist < 2:
                     self.state.proximity_alarm = True
                 else:
                     self.state.proximity_alarm = False
+            else:
+                self.state.proximity_alarm = False
 
 
     def update_path_end(self, msg):
@@ -94,10 +98,11 @@ class ConeStateManager:
             if msg.data == 3:
                 self.state.mode = 3
             elif self.path_end:
-                self.state.mode == 2
+                self.state.mode = 2
 
         elif self.state.mode == 2 and msg.data == 3:
             self.state.mode = 3
+            self.path_end = False
 
         elif self.state.mode == 3 and self.path_end:
             self.state.mode = 4
