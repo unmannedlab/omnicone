@@ -13,7 +13,7 @@ from math import pi
 
 class WaypointPublisher:
 
-    def __init__(self, filename):
+    def __init__(self):
         # Title
         # Description:
         #     Function does
@@ -24,7 +24,7 @@ class WaypointPublisher:
         self.path_pub  = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
 
         # filename = rospy.get_param('/WaypointFilePath')
-        self.LoadWaypoints(filename)
+        self.LoadWaypoints(os.path.join('..','paths', rospy.get_param('~Path')))
 
 
     def LoadWaypoints(self, filename):
@@ -74,5 +74,5 @@ class WaypointPublisher:
 
 
 if __name__ == '__main__':
-    WayPub = WaypointPublisher(os.path.join('..','paths', "NorthLine_1.csv") ) 
+    WayPub = WaypointPublisher()
     WayPub.run()

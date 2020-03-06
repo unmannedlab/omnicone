@@ -13,7 +13,9 @@
 
 	<node name="kinematics_node" pkg="open_base" type="open_base_kinematics" output="screen"/>
 
-	<node name="WaypointPublisher" pkg="omnicone" type="WaypointPublisher" output="screen"/>
+	<node name="WaypointPublisher" pkg="omnicone" type="WaypointPublisher" output="screen">
+        <rosparam command="load" file="$(find omnicone)/config/cone1.yaml" />
+    </node>
 
 	<node name="EKF" pkg="omnicone" type="ConeEKF" output="screen"/>
 
