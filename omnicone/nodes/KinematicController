@@ -28,7 +28,7 @@ class KinematicController:
         self.left_pub  = rospy.Publisher('left_joint/command' , Float64, queue_size=10)
         self.back_pub  = rospy.Publisher('back_joint/command' , Float64, queue_size=10)
         self.right_pub = rospy.Publisher('right_joint/command', Float64, queue_size=10)
-        self.Kine_pub  = rospy.Publisher('KControl/PathEnd'                       , Bool,    queue_size=10)
+        self.Kine_pub  = rospy.Publisher('KControl/PathEnd'   , Bool,    queue_size=10)
 
         # Create the state and path subscribers
         self.state_sub = rospy.Subscriber('/EKF/state', Twist, self.updateVels)
@@ -47,6 +47,24 @@ class KinematicController:
         self.K_err = 1
         self.K_theta = 0.4
         self.desired_speed = 0.75 # m/s
+
+
+    def llh_to_xy(self, msg):
+        
+        a = 6378137.0
+        b = 6356752.3142
+        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(msg.y*pi/180), 2)+ \
+                        math.pow( math.pow(b,2) * math.sin(msg.y*pi/180), 2))/ \
+                       (math.pow( a * math.cos(msg.y*pi/180), 2)+ \
+                        math.pow( b * math.sin(msg.y*pi/180), 2)))
+
+        # Transform LLH to 2D position
+        dlon = msg.x - self.cone_status.home.x   # degrees
+        dlat = msg.y - self.cone_status.home.y   # degrees
+        x_pos = R * math.radians(dlon)              # meters
+        y_pos = R * math.radians(dlat)              # meters
+        
+        return x_pos, y_pos
 
 
     def update_cone_state(self,msg):
@@ -113,11 +131,11 @@ class KinematicController:
                 #   Ramps down speed when less than 1 m away
                 Vx = -(dx_world * math.cos(math.radians(msg.linear.z)) -   \
                     dy_world * math.sin(math.radians(msg.linear.z))) /  \
-                            max(distance,1) * self.desired_speed
+                            max(distance,2) * self.desired_speed
 
                 Vy = -(dx_world * math.sin(math.radians(msg.linear.z)) +   \
                     dy_world * math.cos(math.radians(msg.linear.z))) /  \
-                            max(distance,1) * self.desired_speed
+                            max(distance,2) * self.desired_speed
 
                 # Transform to joint velocities using inverse kinematics
                 resp = self.InverseKinematics(Vx,Vy,Vw)
