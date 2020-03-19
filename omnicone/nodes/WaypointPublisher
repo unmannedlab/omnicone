@@ -36,24 +36,23 @@ class WaypointPublisher:
         self.waypoints = Path()
         self.waypoints.header.stamp = rospy.Time.now()
         self.waypoints.header.frame_id = "world"
-        cx,cy = [], []
+        cx,cy,cv = [], [], []
 
         rospack = rospkg.RosPack()
         with open( os.path.join(rospack.get_path('omnicone'),'scripts', filename) ) as f:
             for line in f:
-                rx, ry = map(float,line.split(','))
+                rx,ry,rv = map(float,line.split(','))
                 cx.append(rx)
                 cy.append(ry)
+                cv.append(rv)
 
-        #x, y, _, _, _ = CubicSplinePlanner.calc_spline_course(cx,cy,ds=1)
-        x,y = cx,cy
-        for i in range(len(x)):
-
+        for i in range(len(cx)):
             cpose = PoseStamped()
             cpose.header.stamp = rospy.Time.now()
             cpose.header.frame_id = "world"
-            cpose.pose.position.x, cpose.pose.position.y = x[i],y[i]
-            cpose.pose.position.z = 0.0
+            cpose.pose.position.x = cx[i]
+            cpose.pose.position.y = cy[i]
+            cpose.pose.position.z = cv[i]
             cpose.pose.orientation.x = 0
             cpose.pose.orientation.y = 0
             cpose.pose.orientation.z = 0
