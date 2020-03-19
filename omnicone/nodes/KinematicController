@@ -49,18 +49,18 @@ class KinematicController:
         self.desired_speed = 0.75 # m/s
 
 
-    def llh_to_xy(self, msg):
+    def llh_to_xy(self, lon, lat):
         
         a = 6378137.0
         b = 6356752.3142
-        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(msg.y*pi/180), 2)+ \
-                        math.pow( math.pow(b,2) * math.sin(msg.y*pi/180), 2))/ \
-                       (math.pow( a * math.cos(msg.y*pi/180), 2)+ \
-                        math.pow( b * math.sin(msg.y*pi/180), 2)))
+        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(lat*pi/180), 2)+ \
+                        math.pow( math.pow(b,2) * math.sin(lat*pi/180), 2))/ \
+                       (math.pow( a * math.cos(lat*pi/180), 2)+ \
+                        math.pow( b * math.sin(lat*pi/180), 2)))
 
         # Transform LLH to 2D position
-        dlon = msg.x - self.cone_status.home.x   # degrees
-        dlat = msg.y - self.cone_status.home.y   # degrees
+        dlon = lon - self.cone_status.home.x   # degrees
+        dlat = lat - self.cone_status.home.y   # degrees
         x_pos = R * math.radians(dlon)              # meters
         y_pos = R * math.radians(dlat)              # meters
         
@@ -100,8 +100,13 @@ class KinematicController:
 
             for i in range(max(0,self.path_index-2), \
                             min(self.path_index+8,len(self.Waypoints.poses)-1)):
-                distance = math.sqrt((self.Waypoints.poses[i].pose.position.x - msg.linear.x)**2 + \
-                                     (self.Waypoints.poses[i].pose.position.y - msg.linear.y)**2)
+                
+                x_pt, y_pt = self.llh_to_xy( \
+                                    self.Waypoints.poses[i].pose.position.x, \
+                                    self.Waypoints.poses[i].pose.position.y)
+
+                distance = math.sqrt((x_pt - msg.linear.x)**2 + \
+                                     (y_pt - msg.linear.y)**2)
                 if distance < dist_min:
                     dist_min = distance
                     self.path_index = i
@@ -109,13 +114,17 @@ class KinematicController:
             # P0 - Current state position
             x0 = msg.linear.x
             y0 = msg.linear.y
+
             # P1 - Closest path pose
-            x1 = self.Waypoints.poses[self.path_index].pose.position.x
-            y1 = self.Waypoints.poses[self.path_index].pose.position.y
-            # P2 - Next path pose
-            x2 = self.Waypoints.poses[self.path_index+1].pose.position.x
-            y2 = self.Waypoints.poses[self.path_index+1].pose.position.y
+            x1, y1 = self.llh_to_xy( \
+                    self.Waypoints.poses[self.path_index].pose.position.x, \
+                    self.Waypoints.poses[self.path_index].pose.position.y)
             
+            # P2 - Next path pose
+            x2, y2 = self.llh_to_xy( \
+                    self.Waypoints.poses[self.path_index+1].pose.position.x, \
+                    self.Waypoints.poses[self.path_index+1].pose.position.y)
+
             self.desired_speed = self.Waypoints.poses[self.path_index].pose.position.z
             dT = float(msg.linear.z - 180)                       # degrees
             Vw = dT / max(abs(dT),30) * self.K_theta
