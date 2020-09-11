@@ -161,20 +161,21 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
- install(PROGRAMS
-   scripts/vel_command_publisher.py
-   scripts/gps_publisher.py
-   scripts/linear_test.py
-   scripts/pos_cmd.py
-   scripts/UBX_publisher.py
-   scripts/EKF.py
-   scripts/Kinematic_Controller.py
-   scripts/Waypoint.py
-   resource/dead_reck_gui.py
-   resource/UBX_gui.py
-   resource/pos_cmd_gui.py
-   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
- )
+install(PROGRAMS
+  nodes/ConeEKF
+  nodes/ConeStateManager
+  scripts/key_teleop.py
+  scripts/KinematicController.py
+  scripts/pos_cmd.py
+  scripts/UBX_cmd.py
+  scripts/UBX_publisher.py
+  scripts/vel_command_publisher.py
+  scripts/Waypoint.py
+  resource/dead_reck_gui.py
+  resource/UBX_gui.py
+  resource/pos_cmd_gui.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
@@ -191,11 +192,9 @@ include_directories(
 # )
 
 # Mark other files for installation (e.g. launch and bag files, etc.)
- install(FILES
-   scripts/SquarePath.csv
-   # myfile2
-   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
- )
+install(FILES
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
 #############
 ## Testing ##

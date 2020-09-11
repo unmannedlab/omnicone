@@ -16,12 +16,12 @@
 
 <node name="kinematics_node" pkg="open_base" type="open_base_kinematics" output="screen"/>
 
-<node name="Waypoint" pkg="omnicone" type="Waypoint.py" output="screen"/>
+<node name="WaypointPublisher" pkg="omnicone" type="WaypointPublisher" output="screen"/>
 
-<node name="UBX_publisher" pkg="omnicone" type="UBX_publisher.py" output="screen"/>
+<node name="EKF" pkg="omnicone" type="ConeEKF" output="screen"/>
 
-<node name="EKF" pkg="omnicone" type="EKF.py" output="screen"/>
+<node name="KinematicController" pkg="omnicone" type="KinematicController" output="screen"/>
 
-<node name="Kinematic_Controller" pkg="omnicone" type="Kinematic_Controller.py" output="screen"/>
+<include file="$(find ubxtranslator)/launch/ubxtranslator.launch" />
 
 </launch>

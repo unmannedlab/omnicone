@@ -22,6 +22,6 @@
 
 <node name="ubx_gui" pkg="omnicone" type="UBX_gui.py" output="screen"/>
 
-<node name="UBX" pkg="omnicone" type="UBX_publisher.py" output="screen"/>
+<include file="$(find ubxtranslator)/launch/ubxtranslator.launch" />
 
 </launch>

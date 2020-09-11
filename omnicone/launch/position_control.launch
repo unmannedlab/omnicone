@@ -22,10 +22,4 @@
 
 <node name="pos_cmd" pkg="omnicone" type="pos_cmd.py" output="screen"/>
 
-<include file="$(find mavros)/launch/px4.launch" respawn="true" respawn_delay="5" />
-
-<node name="omni_tf" pkg="omnicone" type="omni_tf_broadcaster.py" output="screen"/> -->
-
-
-
 </launch>
