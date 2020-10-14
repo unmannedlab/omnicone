@@ -14,8 +14,8 @@ from math import pi
 class WaypointPublisher:
 
     def __init__(self):
-        self.utm_home = (741616.44, 3391629.86)             # meters
-
+        self.utm_home = (741679.615, 3391702.752)             # meters
+        
         rospy.init_node('WaypointPublisher')
 
         # create the publisher

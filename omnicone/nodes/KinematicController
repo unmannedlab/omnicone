@@ -49,24 +49,6 @@ class KinematicController:
         self.desired_speed = 0.75 # m/s
 
 
-    def llh_to_xy(self, lon, lat):
-        
-        a = 6378137.0
-        b = 6356752.3142
-        R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(lat*pi/180), 2)+ \
-                        math.pow( math.pow(b,2) * math.sin(lat*pi/180), 2))/ \
-                       (math.pow( a * math.cos(lat*pi/180), 2)+ \
-                        math.pow( b * math.sin(lat*pi/180), 2)))
-
-        # Transform LLH to 2D position
-        dlon = lon - self.cone_status.home.x   # degrees
-        dlat = lat - self.cone_status.home.y   # degrees
-        x_pos = R * math.radians(dlon)              # meters
-        y_pos = R * math.radians(dlat)              # meters
-        
-        return x_pos, y_pos
-
-
     def update_cone_state(self,msg):
         if self.cone_status.mode == 0 and msg.mode == 1:
             self.path_end = False
@@ -115,14 +97,12 @@ class KinematicController:
             y0 = msg.linear.y
 
             # P1 - Closest path pose
-            x1, y1 = self.llh_to_xy( \
-                    self.Waypoints.poses[self.path_index].pose.position.x, \
-                    self.Waypoints.poses[self.path_index].pose.position.y)
+            x1 = self.Waypoints.poses[self.path_index].pose.position.x
+            y1 = self.Waypoints.poses[self.path_index].pose.position.y
             
             # P2 - Next path pose
-            x2, y2 = self.llh_to_xy( \
-                    self.Waypoints.poses[self.path_index+1].pose.position.x, \
-                    self.Waypoints.poses[self.path_index+1].pose.position.y)
+            x2 = self.Waypoints.poses[self.path_index+1].pose.position.x
+            y2 = self.Waypoints.poses[self.path_index+1].pose.position.y
 
             self.desired_speed = self.Waypoints.poses[self.path_index].pose.position.z
             dT = float(msg.linear.z - 180)                       # degrees
