@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+import rospy
+from std_msgs.msg import Bool, Int8
+
+class Heartbeat:
+
+    def __init__(self):
+
+        rospy.init_node('Heartbeat')
+
+        self.kill_pub  = rospy.Publisher('Cone_Command/kill', Bool, queue_size=10)
+        self.mode_pub  = rospy.Publisher('Cone_Command/mode', Int8, queue_size=10)
+
+        self.state_sub = rospy.Subscriber('/gui/kill', Bool, self.update_kill)
+        self.state_sub = rospy.Subscriber('/gui/mode', Int8, self.update_mode)
+
+        self.cmd_kill = False
+        self.cmd_mode = 0
+
+
+    def update_kill(self, msg):
+        self.cmd_kill = msg
+
+
+    def update_mode(self, msg):
+        self.cmd_mode = msg
+
+
+    def run(self):
+        rate = rospy.Rate(10) # 10 Hz
+
+        while(not rospy.is_shutdown()):
+
+            self.kill_pub.publish( self.cmd_kill )
+            self.mode_pub.publish( self.cmd_mode )
+
+            rate.sleep()
+
+
+if __name__ == '__main__':
+    beat = Heartbeat()
+    beat.run()

@@ -20,12 +20,12 @@
 #
 #     4 - Complete
 
-import math
+
 import rospy
+from math import sqrt
 from std_msgs.msg import Bool, Int8
 from omnicone_msgs.msg import ConeState
-from geometry_msgs.msg import Vector3, Twist, Pose2D
-from ubxtranslator.msg import hpposllh
+from geometry_msgs.msg import Twist, Pose2D
 
 
 class ConeStateManager:
@@ -36,9 +36,8 @@ class ConeStateManager:
 
         self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
 
-        self.hpposllh_sub   = rospy.Subscriber('UBX/hpposllh',      hpposllh,   self.update_hpposllh)
-        self.kill_sub       = rospy.Subscriber('Cone_Command/Kill', Bool,       self.update_kill_cmd)
-        self.state_sub      = rospy.Subscriber('Cone_Command/State',Int8,       self.update_state_cmd)
+        self.kill_sub       = rospy.Subscriber('Cone_Command/kill', Bool,       self.update_kill_cmd)
+        self.state_sub      = rospy.Subscriber('Cone_Command/mode', Int8,       self.update_state_cmd)
         self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,      self.update_EKF_state)
         self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,       self.update_path_end)
         self.Other_cone_sub = rospy.Subscriber('recv/ConeState',    ConeState,  self.proximity_check)
@@ -47,8 +46,7 @@ class ConeStateManager:
         self.path_end       = False
         self.last_beat      = rospy.get_time()
 
-        self.hpposllh       = hpposllh()
-        self.state          = ConeState(rospy.get_param('~Cone_number'), False,0, False, False, Pose2D(0,0,0), Vector3(0,0,0))
+        self.state          = ConeState(rospy.get_param('~Cone_number'), False,0, False, False, Pose2D(0,0,0) )
 
 
     def proximity_check(self,msg):
@@ -59,8 +57,8 @@ class ConeStateManager:
 
         if self.state.mode == 1 and msg.mode == 1:
             if self.state.cone_num > msg.cone_num:
-                dist = math.sqrt(  (self.state.pos.x - msg.pos.x)**2 + \
-                                   (self.state.pos.y - msg.pos.y)**2)
+                dist = sqrt(   (self.state.pos.x - msg.pos.x)**2 + \
+                               (self.state.pos.y - msg.pos.y)**2)
                 if dist < 2:
                     self.state.proximity_alarm = True
                 else:
@@ -69,8 +67,8 @@ class ConeStateManager:
                 self.state.proximity_alarm = False
         elif self.state.mode == 3 and msg.mode == 3:
             if self.state.cone_num < msg.cone_num:
-                dist = math.sqrt(  (self.state.pos.x - msg.pos.x)**2 + \
-                                   (self.state.pos.y - msg.pos.y)**2)
+                dist = sqrt(   (self.state.pos.x - msg.pos.x)**2 + \
+                               (self.state.pos.y - msg.pos.y)**2)
                 if dist < 2:
                     self.state.proximity_alarm = True
                 else:
@@ -106,19 +104,6 @@ class ConeStateManager:
 
         elif self.state.mode == 3 and self.path_end:
             self.state.mode = 4
-
-
-    def update_hpposllh(self,msg):
-        # Home Position Initialization
-        # Description:
-        #     Function checks if position error is less than 4 cm and if
-        #     so, sets that position as home, (0,0) in (x,y).
-
-        if self.state.mode == 0 and msg.err.lon < 0.04:
-            self.state.home.x = msg.llh.lon
-            self.state.home.y = msg.llh.lat
-            self.state.mode = 1
-            self.state.init = True
 
 
     def update_EKF_state(self,msg):
