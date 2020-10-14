@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 
+# ROS Import
 import rospy
-import open_base
-import math
-import numpy as np
-from std_msgs.msg import Int32
-from geometry_msgs.msg import Twist, Pose2D, Vector3
-from omnicone_msgs.msg import ConeState
-from ubxtranslator.msg import hpposllh, relpos2D
 
-from math import pi
+# Math Imports
+import utm 
+import numpy as np
+from math import pi, cos, sin, sqrt
+
+# ROS Message Imports
+from std_msgs.msg       import Int32
+from geometry_msgs.msg  import Twist, Pose2D
+from omnicone_msgs.msg  import ConeState
+from ubxtranslator.msg  import hpposllh, relpos2D
+
 class ConeEKF:
 
     def __init__(self):
@@ -28,7 +32,6 @@ class ConeEKF:
         self.right_enc_sub   = rospy.Subscriber('/right_joint/absolute_encoder_count', Int32, self.predict_step)
         self.UBX_llh_llh_sub = rospy.Subscriber('/UBX/hpposllh', hpposllh, self.update_hpposllh)
         self.UBX_rel_pos_sub = rospy.Subscriber('/UBX/relpos2D', relpos2D, self.update_step)
-        self.cone_state_sub  = rospy.Subscriber('/ConeState',   ConeState, self.update_cone_state)
 
         # create publisher for position estimate
         self.state_pub = rospy.Publisher('EKF/state', Twist, queue_size=10)
@@ -50,7 +53,6 @@ class ConeEKF:
             [ 2.76E-05,-1.58E-05, 5.01E-03, 9.83E-05, 1.12E-04, 3.99E-03],\
             [ 6.95E-02, 3.40E-03, 2.52E-01, 1.58E-02, 3.99E-03, 8.82E+00]])
 
-
         self.state_cov = self.Q
 
         self.F = np.array([ \
@@ -61,7 +63,6 @@ class ConeEKF:
             [0.0, 0.0, 0.0, 0.0, 1.0, 0.0 ], \
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0 ]])
 
-        # State Observation Matrix is Constant
         self.H = np.array([ \
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
             [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], \
@@ -86,16 +87,6 @@ class ConeEKF:
             [1.0, 0.0, 0.0], \
             [0.0, 1.0, 0.0], \
             [0.0, 0.0, 1.0]])
-
-
-    def update_cone_state(self,msg):
-        # Cone Initialization Update
-        if not self.cone_init and msg.init:
-            self.cone_init = True
-            self.lon_home = msg.home.x
-            self.lon      = msg.home.x
-            self.lat_home = msg.home.y
-            self.lat      = msg.home.y
 
 
     def update_hpposllh(self, msg):
@@ -176,14 +167,14 @@ class ConeEKF:
 
         # Forward Kinematics Transformation
         delta_x = (2*D2 - D1 - D3) / 3
-        delta_y = math.sqrt(3) * (D3 - D1) / 3
+        delta_y = sqrt(3) * (D3 - D1) / 3
         delta_w = -(D1 + D2 + D3)/(3 * 0.1905)
 
         # Rotation to World Frame
-        delta_x_w = -delta_x*math.cos(delta_w/2 + self.state[2]*pi/180) + \
-                     delta_y*math.sin(delta_w/2 + self.state[2]*pi/180)
-        delta_y_w = -delta_x*math.sin(delta_w/2 + self.state[2]*pi/180) - \
-                     delta_y*math.cos(delta_w/2 + self.state[2]*pi/180)
+        delta_x_w = -delta_x*cos(delta_w/2 + self.state[2]*pi/180) + \
+                     delta_y*sin(delta_w/2 + self.state[2]*pi/180)
+        delta_y_w = -delta_x*sin(delta_w/2 + self.state[2]*pi/180) - \
+                     delta_y*cos(delta_w/2 + self.state[2]*pi/180)
 
         # Element-wise assign or else assigned by reference (very bad)
         self.enc_prev[0] = self.enc_curr[0]
@@ -215,25 +206,11 @@ class ConeEKF:
         #     the Kalman filter.
 
         if self.cone_init:
-            # Update state and observation covariance values
-            self.R[2,2] = msg.err.theta * self.UBX_error_gain
-
-            # Ellipsoidal model calculation of Earth
-            a = 6378137.0
-            b = 6356752.3142
-            R = math.sqrt(( math.pow( math.pow(a,2) * math.cos(self.lat*pi/180), 2)+ \
-                            math.pow( math.pow(b,2) * math.sin(self.lat*pi/180), 2))/ \
-                        (math.pow( a * math.cos(self.lat*pi/180), 2)+ \
-                            math.pow( b * math.sin(self.lat*pi/180), 2))) + self.height
-
-            # Transform LLH to 2D position
-            dlon = self.lon - self.lon_home    # degrees
-            dlat = self.lat - self.lat_home    # degrees
-            dE = R * math.radians(dlon)     # meters
-            dN = R * math.radians(dlat)     # meters
+            
+            pos_utm = utm.from_latlon(self.lat, self.lon)
 
             # Measurement in matrix format
-            measurement = np.array([[dE],[dN],[msg.pos.theta]])
+            measurement = np.array([pos_utm[0], pos_utm[1], [msg.pos.theta]])
 
             # y_k       = z_k - h(xhat_k|k-1)
             self.y = measurement - np.matmul(self.H, self.state)
@@ -249,6 +226,7 @@ class ConeEKF:
 
             # P_k|k     = (I - K_k * H_k) * P_k|k-1
             self.state_cov = np.matmul((np.eye(6) - np.matmul(self.K, self.H)), self.state_cov)
+
 
     def run(self):
         # State Estimation Publisher

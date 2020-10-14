@@ -22,13 +22,15 @@
    
 	<node name="udp_receiver_1" pkg="nimbro_topic_transport" type="udp_receiver" output="screen">
 		<param name="port" value="17001" />
-		<remap from="/ConeState" to="/recv/ConeState" />
+		<remap from="/ConeState" to="/recv/ConeState1" />
 	</node>
 
 	<node name="udp_receiver_2" pkg="nimbro_topic_transport" type="udp_receiver" output="screen">
 		<param name="port" value="17002" />
-		<remap from="/ConeState" to="/recv/ConeState" />
+		<remap from="/ConeState" to="/recv/ConeState2" />
 	</node>
 
+	<node name="cone_cmd" pkg="omnicone" type="cone_cmd_gui.py" output="screen" />
+	<node name="Heartbeat" pkg="omnicone" type="Heartbeat" output="screen" />
 
 </launch>

@@ -33,7 +33,7 @@ class KinematicController:
         # Create the state and path subscribers
         self.state_sub = rospy.Subscriber('/EKF/state', Twist, self.updateVels)
         self.path_sub  = rospy.Subscriber('Waypoints',  Path,  self.updatePath)
-        self.cone_state_sub  = rospy.Subscriber('/ConeState', ConeState, self.update_cone_state)
+        self.cone_state_sub = rospy.Subscriber('/ConeState', ConeState, self.update_cone_state)
 
         # Initialize persistent variables
         self.cmd_vel = [0.0, 0.0, 0.0]
@@ -101,9 +101,8 @@ class KinematicController:
             for i in range(max(0,self.path_index-2), \
                             min(self.path_index+8,len(self.Waypoints.poses)-1)):
                 
-                x_pt, y_pt = self.llh_to_xy( \
-                                    self.Waypoints.poses[i].pose.position.x, \
-                                    self.Waypoints.poses[i].pose.position.y)
+                x_pt = self.Waypoints.poses[i].pose.position.x
+                y_pt = self.Waypoints.poses[i].pose.position.y                                    
 
                 distance = math.sqrt((x_pt - msg.linear.x)**2 + \
                                      (y_pt - msg.linear.y)**2)

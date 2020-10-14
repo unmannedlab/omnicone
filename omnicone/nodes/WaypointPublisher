@@ -14,9 +14,7 @@ from math import pi
 class WaypointPublisher:
 
     def __init__(self):
-        # Title
-        # Description:
-        #     Function does
+        self.utm_home = (741616.44, 3391629.86)             # meters
 
         rospy.init_node('WaypointPublisher')
 
@@ -50,8 +48,8 @@ class WaypointPublisher:
             cpose = PoseStamped()
             cpose.header.stamp = rospy.Time.now()
             cpose.header.frame_id = "world"
-            cpose.pose.position.x = cx[i]
-            cpose.pose.position.y = cy[i]
+            cpose.pose.position.x = cx[i] + self.utm_home[0]
+            cpose.pose.position.y = cy[i] + self.utm_home[1]
             cpose.pose.position.z = cv[i]
             cpose.pose.orientation.x = 0
             cpose.pose.orientation.y = 0
@@ -60,9 +58,6 @@ class WaypointPublisher:
             self.waypoints.poses.append(cpose)
 
     def run(self):
-        # Title
-        # Description:
-        #     Function does
 
         rate = rospy.Rate(1) # 1 Hz
 
