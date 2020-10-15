@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os 
+import os
 import rospy
 import rospkg
 import math
@@ -14,16 +14,17 @@ from math import pi
 class WaypointPublisher:
 
     def __init__(self):
-        
+
         rospy.init_node('WaypointPublisher')
-        
+
         self.home_init = False
+	self.utm_home = (0,0)
 
         self.home_sub = rospy.Subscriber('Cone_Command/home', Vector3, self.update_home)
         self.path_pub = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
 
         # filename = rospy.get_param('/WaypointFilePath')
-        self.LoadWaypoints(os.path.join('..','paths', rospy.get_param('~Path')))
+        self.LoadWaypoints(os.path.join('paths', rospy.get_param('~Path')))
 
 
     def update_home(self, msg):
@@ -43,7 +44,9 @@ class WaypointPublisher:
         cx,cy,cv = [], [], []
 
         rospack = rospkg.RosPack()
-        with open( os.path.join(rospack.get_path('omnicone'),'scripts', filename) ) as f:
+	print(os.path.join(rospack.get_path('omnicone'), filename))
+
+        with open( os.path.join(rospack.get_path('omnicone'), filename) ) as f:
             for line in f:
                 rx,ry,rv = map(float,line.split(','))
                 cx.append(rx)
