@@ -25,28 +25,28 @@ import rospy
 from math import sqrt
 from std_msgs.msg import Bool, Int8
 from omnicone_msgs.msg import ConeState
-from geometry_msgs.msg import Twist, Pose2D
+from geometry_msgs.msg import Twist, Pose2D, Vector3
 
 
 class ConeStateManager:
 
     def __init__(self):
 
-        rospy.init_node('ConeStateManager')
-
-        self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
-
-        self.kill_sub       = rospy.Subscriber('Cone_Command/kill', Bool,       self.update_kill_cmd)
-        self.state_sub      = rospy.Subscriber('Cone_Command/mode', Int8,       self.update_state_cmd)
-        self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,      self.update_EKF_state)
-        self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,       self.update_path_end)
-        self.Other_cone_sub = rospy.Subscriber('recv/ConeState',    ConeState,  self.proximity_check)
-
         self.cmd_timeout    = 2.5
         self.path_end       = False
         self.last_beat      = rospy.get_time()
 
         self.state          = ConeState(rospy.get_param('~Cone_number'), False,0, False, False, Pose2D(0,0,0) )
+
+        rospy.init_node('ConeStateManager')
+        self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
+
+        self.kill_sub       = rospy.Subscriber('Cone_Command/kill', Bool,       self.update_kill_cmd)
+        self.mode_sub       = rospy.Subscriber('Cone_Command/mode', Int8,       self.update_mode_cmd)
+        self.home_sub       = rospy.Subscriber('Cone_Command/home', Vector3,    self.update_home_cmd)
+        self.EKFstate_sub   = rospy.Subscriber('EKF/state',         Twist,      self.update_EKF_state)
+        self.Kine_sub       = rospy.Subscriber('KControl/PathEnd',  Bool,       self.update_path_end)
+        self.Other_cone_sub = rospy.Subscriber('recv/ConeState',    ConeState,  self.proximity_check)
 
 
     def proximity_check(self,msg):
@@ -86,7 +86,7 @@ class ConeStateManager:
         self.last_beat          = rospy.get_time()
 
 
-    def update_state_cmd(self,msg):
+    def update_mode_cmd(self,msg):
         # State Machine
         # Description:
         #     Function checks the state machine conditions and advances
@@ -105,6 +105,10 @@ class ConeStateManager:
         elif self.state.mode == 3 and self.path_end:
             self.state.mode = 4
 
+    def update_home_cmd(self, msg): 
+        self.state.mode = 1
+        self.state.init = True
+        
 
     def update_EKF_state(self,msg):
         self.state.pos = Pose2D(msg.linear.x, \

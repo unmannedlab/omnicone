@@ -18,7 +18,7 @@ class WaypointPublisher:
         rospy.init_node('WaypointPublisher')
 
         self.home_init = False
-	self.utm_home = (0,0)
+        self.utm_home = (0, 0)
 
         self.home_sub = rospy.Subscriber('Cone_Command/home', Vector3, self.update_home)
         self.path_pub = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
@@ -44,7 +44,6 @@ class WaypointPublisher:
         cx,cy,cv = [], [], []
 
         rospack = rospkg.RosPack()
-	print(os.path.join(rospack.get_path('omnicone'), filename))
 
         with open( os.path.join(rospack.get_path('omnicone'), filename) ) as f:
             for line in f:
