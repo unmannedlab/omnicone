@@ -92,7 +92,7 @@ class ConeStateManager:
         # Description:
         #     Function checks the state machine conditions and advances
         #     the state when appropriate.
-        if self.state.mode == 0: and msg.data == 1:
+        if self.state.mode == 0 and msg.data == 1:
             self.state.mode = 1
         elif self.state.mode == 1:
             if msg.data == 3:
