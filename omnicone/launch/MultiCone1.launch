@@ -28,6 +28,11 @@
         <rosparam command="load" file="$(find omnicone)/config/cone1.yaml" />
     </node>
 
+	<node name="udp_sender_0" pkg="nimbro_topic_transport" type="udp_sender" output="screen">
+		<param name="destination_addr" value="192.168.1.10" />
+		<param name="destination_port" value="17001" />
+		<rosparam command="load" file="$(find omnicone)/config/cone_topics.yaml" />
+	</node>
 
 	<node name="udp_sender_2" pkg="nimbro_topic_transport" type="udp_sender" output="screen">
 		<param name="destination_addr" value="192.168.1.12" />

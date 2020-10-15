@@ -5,7 +5,7 @@ import rospy
 import rospkg
 import math
 import open_base
-from geometry_msgs.msg import Twist, Pose2D, PoseStamped
+from geometry_msgs.msg import Twist, Pose2D, PoseStamped, Vector3
 from nav_msgs.msg import Path
 
 from math import pi
@@ -14,15 +14,21 @@ from math import pi
 class WaypointPublisher:
 
     def __init__(self):
-        self.utm_home = (741679.615, 3391702.752)             # meters
         
         rospy.init_node('WaypointPublisher')
+        
+        self.home_init = False
 
-        # create the publisher
-        self.path_pub  = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
+        self.home_sub = rospy.Subscriber('Cone_Command/home', Vector3, self.update_home)
+        self.path_pub = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
 
         # filename = rospy.get_param('/WaypointFilePath')
         self.LoadWaypoints(os.path.join('..','paths', rospy.get_param('~Path')))
+
+
+    def update_home(self, msg):
+        self.utm_home = (msg.x, msg.y)
+        self.home_init = True
 
 
     def LoadWaypoints(self, filename):
@@ -62,8 +68,9 @@ class WaypointPublisher:
         rate = rospy.Rate(1) # 1 Hz
 
         while(not rospy.is_shutdown()):
+            if self.home_init:
+                self.path_pub.publish(self.waypoints)
 
-            self.path_pub.publish(self.waypoints)
             rate.sleep()
 
 

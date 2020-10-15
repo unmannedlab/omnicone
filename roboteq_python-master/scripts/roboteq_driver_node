@@ -40,7 +40,7 @@ def get_motor_port(motor_num):
                     timeout=0.1,
                     )
                 query_str="~CNOD\r"
-                ser.write(query_str)
+                ser.write(str.encode(query_str))
                 responses = (str([ser.readall()]))
                 var_matches = re.search('CNOD=([0-9]+)', responses)
                 if var_matches:

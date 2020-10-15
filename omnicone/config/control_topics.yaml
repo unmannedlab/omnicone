@@ -1,3 +1,4 @@
 topics:
  - name: "/Cone_Command/mode"
  - name: "/Cone_Command/kill"
+ - name: "/Cone_Command/home"
