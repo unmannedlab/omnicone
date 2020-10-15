@@ -227,7 +227,7 @@ class ConeEKF:
             self.state_cov = np.matmul((np.eye(6) - np.matmul(self.K, self.H)), self.state_cov)
 
         else:            
-            self.state = np.array([pos_utm[0], pos_utm[1], [msg.pos.theta], [0], [0], [0]])
+            self.state = np.array([pos_utm[0], pos_utm[1], [msg.pos.theta], 0, 0, 0])
             self.cone_init = False
             
 

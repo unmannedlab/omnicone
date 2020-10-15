@@ -32,13 +32,14 @@ class ConeStateManager:
 
     def __init__(self):
 
+        rospy.init_node('ConeStateManager')
+
         self.cmd_timeout    = 2.5
         self.path_end       = False
         self.last_beat      = rospy.get_time()
 
         self.state          = ConeState(rospy.get_param('~Cone_number'), False,0, False, False, Pose2D(0,0,0) )
 
-        rospy.init_node('ConeStateManager')
         self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
 
         self.kill_sub       = rospy.Subscriber('Cone_Command/kill', Bool,       self.update_kill_cmd)
@@ -91,8 +92,9 @@ class ConeStateManager:
         # Description:
         #     Function checks the state machine conditions and advances
         #     the state when appropriate.
-
-        if self.state.mode == 1:
+        if self.state.mode == 0: and msg.data == 1:
+            self.state.mode = 1
+        elif self.state.mode == 1:
             if msg.data == 3:
                 self.state.mode = 3
             elif self.path_end:
@@ -106,7 +108,6 @@ class ConeStateManager:
             self.state.mode = 4
 
     def update_home_cmd(self, msg): 
-        self.state.mode = 1
         self.state.init = True
         
 
