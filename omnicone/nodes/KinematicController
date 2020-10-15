@@ -76,7 +76,7 @@ class KinematicController:
         #     on the path is found and control and error velocities are
         #     controlled to that section of the path.
 
-        if self.Waypoints:
+        if len(self.Waypoints.poses) > 1:
             # Look for closest point and update global velocity goal
             dist_min = 10e9
 
