@@ -11,9 +11,11 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QObject
 
 
-def mode_to_str(mode):
-    if(mode == 0):
-        return " Initializing"
+def mode_to_str(mode, proxy):
+    if proxy:
+        return " Waiting"
+    elif(mode == 0):
+        return " Initialized"
     elif(mode == 1):
         return " Deploying"
     elif(mode == 2):
@@ -59,15 +61,15 @@ class cone_cmd(QObject):
         
 
     def update_ConeState_1(self, msg):
-        self.window.label_cone1.setText(mode_to_str(msg.mode))
+        self.window.label_cone1.setText(mode_to_str(msg.mode, msg.proximity_alarm))
 
 
     def update_ConeState_2(self, msg):
-        self.window.label_cone1.setText(mode_to_str(msg.mode))
+        self.window.label_cone2.setText(mode_to_str(msg.mode, msg.proximity_alarm))
         
 
     def update_ConeState_3(self, msg):
-        self.window.label_cone1.setText(mode_to_str(msg.mode))
+        self.window.label_cone3.setText(mode_to_str(msg.mode, msg.proximity_alarm))
 
 
     def cmd_deploy(self):

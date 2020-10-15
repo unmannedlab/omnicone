@@ -5,9 +5,11 @@ import rospy
 import rospkg
 import math
 import open_base
+
 from geometry_msgs.msg import Twist, Pose2D, PoseStamped, Vector3
 from nav_msgs.msg import Path
 
+import numpy as np
 from math import pi
 
 
@@ -52,12 +54,16 @@ class WaypointPublisher:
                 cy.append(ry)
                 cv.append(rv)
 
+        R = np.array([np.cos(self.utm_home[2]),-np.sin(self.utm_home[2])], \
+                    [ np.sin(self.utm_home[2]), np.cos(self.utm_home[2])])
+
         for i in range(len(cx)):
+            b = np.matmul(R, np.array([[cx[i]],[cy[i]]]))
             cpose = PoseStamped()
             cpose.header.stamp = rospy.Time.now()
             cpose.header.frame_id = "world"
-            cpose.pose.position.x = cx[i] + self.utm_home[0]
-            cpose.pose.position.y = cy[i] + self.utm_home[1]
+            cpose.pose.position.x = b[0] + self.utm_home[0]
+            cpose.pose.position.y = b[1] + self.utm_home[1]
             cpose.pose.position.z = cv[i]
             cpose.pose.orientation.x = 0
             cpose.pose.orientation.y = 0

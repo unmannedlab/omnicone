@@ -60,12 +60,13 @@ class ConeStateManager:
             if self.state.cone_num > msg.cone_num:
                 dist = sqrt(   (self.state.pos.x - msg.pos.x)**2 + \
                                (self.state.pos.y - msg.pos.y)**2)
-                if dist < 2:
+                if dist < 3:
                     self.state.proximity_alarm = True
                 else:
                     self.state.proximity_alarm = False
             else:
                 self.state.proximity_alarm = False
+                
         elif self.state.mode == 3 and msg.mode == 3:
             if self.state.cone_num < msg.cone_num:
                 dist = sqrt(   (self.state.pos.x - msg.pos.x)**2 + \
