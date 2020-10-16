@@ -20,13 +20,13 @@ class WaypointPublisher:
         rospy.init_node('WaypointPublisher')
 
         self.home_init = False
-        self.utm_home = (0, 0)
+        self.utm_home = (0, 0, 0)
 
         self.home_sub = rospy.Subscriber('Cone_Command/home', Vector3, self.update_home)
-        self.path_pub = rospy.Publisher('Waypoints' , Path, latch=True, queue_size=1)
+        self.path_pub = rospy.Publisher('Waypoints', Path, latch=True, queue_size=1)
 
         # filename = rospy.get_param('/WaypointFilePath')
-        self.LoadWaypoints(os.path.join('paths', rospy.get_param('~Path')))
+        self.LoadWaypoints(os.path.join('paths', rospy.get_param('~Path','UTM_1.csv')))
 
 
     def update_home(self, msg):
@@ -54,8 +54,8 @@ class WaypointPublisher:
                 cy.append(ry)
                 cv.append(rv)
 
-        R = np.array([np.cos(self.utm_home[2]),-np.sin(self.utm_home[2])], \
-                    [ np.sin(self.utm_home[2]), np.cos(self.utm_home[2])])
+        R = np.array([[np.cos(self.utm_home[2]),-np.sin(self.utm_home[2])],
+                      [np.sin(self.utm_home[2]), np.cos(self.utm_home[2])]])
 
         for i in range(len(cx)):
             b = np.matmul(R, np.array([[cx[i]],[cy[i]]]))
