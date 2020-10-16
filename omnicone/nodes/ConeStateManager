@@ -56,7 +56,7 @@ class ConeStateManager:
         #     Function check, if deploying or returning, if it will run into the
         #     next closest platform. If within 3 meters, platform in rear will stop.
 
-        if self.state.mode == 1 and msg.mode == 1:
+        if (self.state.mode == 0 and msg.mode == 0) or (self.state.mode == 1 and msg.mode == 1):
             if self.state.cone_num > msg.cone_num:
                 dist = sqrt(   (self.state.pos.x - msg.pos.x)**2 + \
                                (self.state.pos.y - msg.pos.y)**2)
