@@ -44,16 +44,18 @@ class KinematicController:
         self.cone_status = ConeState()
 
         # Kinematic Controller Values
-        self.K_err = 1
-        self.K_theta = 0.4
+        self.K_err = 0.1
+        self.K_theta = 0.2
         self.desired_speed = 0.75 # m/s
 
 
     def update_cone_state(self,msg):
         if self.cone_status.mode == 0 and msg.mode == 1:
             self.path_end = False
+            self.path_end_timer = rospy.get_time()
         elif self.cone_status.mode == 2 and msg.mode == 3:
             self.path_end = False
+            self.path_end_timer = rospy.get_time()
         self.cone_status = msg
 
 
@@ -113,7 +115,7 @@ class KinematicController:
                 dx_world = x2 - x0
                 dy_world = y2 - y0
                 distance = math.sqrt(dx_world**2 + dy_world**2)
-                if distance < 0.1:
+                if distance < 0.1 and rospy.get_time() - self.path_end_timer > 5.0:
                     self.path_end = True
 
                 # Normalizes velocities to error from final point

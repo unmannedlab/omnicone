@@ -30,8 +30,10 @@ class WaypointPublisher:
 
 
     def update_home(self, msg):
-        self.utm_home = (msg.x, msg.y)
-        self.home_init = True
+        if self.utm_home[0] != msg.x: 
+            self.utm_home = (msg.x, msg.y, msg.z)
+            self.home_init = True
+            self.LoadWaypoints(os.path.join('paths', rospy.get_param('~Path','UTM_1.csv')))
 
 
     def LoadWaypoints(self, filename):

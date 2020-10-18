@@ -21,8 +21,8 @@ class Heartbeat:
         self.cmd_kill = False
         self.cmd_mode = 0
 
-        utm_home = utm.from_latlon(30.622428, -96.3558358)
-        self.home = Vector3(utm_home[0], utm_home[1], 0.68)
+        utm_home = utm.from_latlon(30.6335956, -96.4784132)
+        self.home = Vector3(utm_home[0], utm_home[1], 0.0)
 
 
     def update_kill(self, msg):
