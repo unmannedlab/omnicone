@@ -106,7 +106,7 @@ class KinematicController:
             x2 = self.Waypoints.poses[self.path_index+1].pose.position.x
             y2 = self.Waypoints.poses[self.path_index+1].pose.position.y
 
-            self.desired_speed = self.Waypoints.poses[self.path_index].pose.position.z
+            #self.desired_speed = self.Waypoints.poses[self.path_index].pose.position.z
             dT = float(msg.linear.z - 180)                       # degrees
             Vw = dT / max(abs(dT),30) * self.K_theta
 

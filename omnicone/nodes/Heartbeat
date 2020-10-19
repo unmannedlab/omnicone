@@ -21,7 +21,7 @@ class Heartbeat:
         self.cmd_kill = False
         self.cmd_mode = 0
 
-        utm_home = utm.from_latlon(30.6335956, -96.4784132)
+        utm_home = utm.from_latlon(30.6341173, -96.4791011)
         self.home = Vector3(utm_home[0], utm_home[1], 0.0)
 
 
