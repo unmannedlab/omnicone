@@ -1,26 +1,5 @@
 #!/usr/bin/env python
 
-# Modes:
-#     0 - Initialization:
-#         EKF waits for home position before publishing
-#         Ends when EKF publishes first position estimate
-#
-#     1 - Deploy:
-#         Following path
-#         Listening to forward device
-#         Stops if too close
-#
-#     2 - Idle:
-#         Waiting for signal
-#
-#     3 - Return:
-#         Follow path in reverse
-#         Listening to forward device
-#         Stops if too close
-#
-#     4 - Complete
-
-
 import rospy
 from math import sqrt
 from std_msgs.msg import Bool, Int8
@@ -34,14 +13,17 @@ class ConeStateManager:
 
         rospy.init_node('ConeStateManager')
 
+        # Persistent Variables        
         self.cmd_timeout    = 2.5
         self.path_end       = False
         self.last_beat      = rospy.get_time()
 
         self.state          = ConeState(rospy.get_param('~Cone_number'), False,0, False, False, Pose2D(0,0,0) )
 
+        # State Machine Publisher
         self.state_pub      = rospy.Publisher('ConeState', ConeState, queue_size=10)
 
+        # Subscirbers 
         self.kill_sub       = rospy.Subscriber('Cone_Command/kill', Bool,       self.update_kill_cmd)
         self.mode_sub       = rospy.Subscriber('Cone_Command/mode', Int8,       self.update_mode_cmd)
         self.home_sub       = rospy.Subscriber('Cone_Command/home', Vector3,    self.update_home_cmd)
@@ -51,16 +33,18 @@ class ConeStateManager:
 
 
     def proximity_check(self,msg):
-        # Proximity Alarm
-        # Description:
-        #     Function check, if deploying or returning, if it will run into the
-        #     next closest platform. If within 3 meters, platform in rear will stop.
+        '''
+        Proximity Alarm
+        Description:
+            Function check, if deploying or returning, if it will run into the
+            next closest platform. If within 2 meters, platform in rear will stop.
+        '''
 
         if (self.state.mode == 0 and msg.mode == 0) or (self.state.mode == 1 and msg.mode == 1):
             if self.state.cone_num > msg.cone_num:
                 dist = sqrt(   (self.state.pos.x - msg.pos.x)**2 + \
                                (self.state.pos.y - msg.pos.y)**2)
-                if dist < 3:
+                if dist < 2:
                     self.state.proximity_alarm = True
                 else:
                     self.state.proximity_alarm = False
@@ -80,21 +64,55 @@ class ConeStateManager:
 
 
     def update_path_end(self, msg):
+        '''
+        Update Path End
+        Description:
+            Updates path end message from Kinematic Controller
+        '''
         self.path_end = msg.data
 
 
     def update_kill_cmd(self, msg):
+        '''
+        Update Kill Command
+        Description:
+            Updates kill message from Cone Commander. Updates last time message was received.
+        '''
         self.state.kill_switch  = msg.data
         self.last_beat          = rospy.get_time()
 
 
     def update_mode_cmd(self,msg):
-        # State Machine
-        # Description:
-        #     Function checks the state machine conditions and advances
-        #     the state when appropriate.
+        '''
+        State Machine
+        Description:
+            Function checks the state machine conditions and advances
+            the state when appropriate.
+        
+        Modes:
+        0 - Initialization:
+            EKF waits for home position before publishing
+            Ends when EKF publishes first position estimate
+
+        1 - Deploy:
+            Following path
+            Listening to forward device
+            Stops if too close
+
+        2 - Idle:
+            Waiting for signal
+
+        3 - Return:
+            Follow path in reverse
+            Listening to forward device
+            Stops if too close
+
+        4 - Complete
+        '''
+
         if self.state.mode == 0 and msg.data == 1:
             self.state.mode = 1
+
         elif self.state.mode == 1:
             if msg.data == 3:
                 self.state.mode = 3
@@ -108,11 +126,25 @@ class ConeStateManager:
         elif self.state.mode == 3 and self.path_end:
             self.state.mode = 4
 
+        elif self.state.mode == 4 and msg.data == 1:
+            self.state.mode = 1
+
+
     def update_home_cmd(self, msg): 
+        '''
+        Update Home Command
+        Description:
+            Updates cone home message from Cone Commander.
+        '''
         self.state.init = True
         
 
     def update_EKF_state(self,msg):
+        '''
+        Update EKF State 
+        Description:
+            Updates position estimate from the EKF
+        '''
         self.state.pos = Pose2D(msg.linear.x, \
                                 msg.linear.y, \
                                 msg.linear.z)
@@ -122,6 +154,7 @@ class ConeStateManager:
         rate = rospy.Rate(10) # 10 Hz
 
         while(not rospy.is_shutdown()):
+            # Command Timeout 
             if ( rospy.get_time() - self.last_beat > self.cmd_timeout):
                 self.state.kill_switch = True
 

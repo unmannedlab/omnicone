@@ -3,7 +3,7 @@
 import rospy
 import math
 from std_msgs.msg import Float64, Bool
-from geometry_msgs.msg import Twist, Pose2D
+from geometry_msgs.msg import Twist
 from omnicone_msgs.msg import ConeState
 from nav_msgs.msg import Path
 from math import pi
@@ -11,11 +11,13 @@ from math import pi
 class KinematicController:
 
     def __init__(self):
-        # Kinematic Controller object initialization
-        # Description:
-        #     Function inializes the Kinematic Controller object. Subscribes
-        #     to state and path and publsihes commands. Initializes persistent
-        #     variables.
+        '''
+        Kinematic Controller object initialization
+        Description:
+            Function inializes the Kinematic Controller object. Subscribes
+            to state and path and publsihes commands. Initializes persistent
+            variables.
+        '''
 
         rospy.init_node('KinematicController')
 
@@ -33,7 +35,7 @@ class KinematicController:
         # Create the state and path subscribers
         self.state_sub = rospy.Subscriber('/EKF/state', Twist, self.updateVels)
         self.path_sub  = rospy.Subscriber('Waypoints',  Path,  self.updatePath)
-        self.cone_state_sub = rospy.Subscriber('/ConeState', ConeState, self.update_cone_state)
+        self.cone_state_sub = rospy.Subscriber('/ConeState', ConeState, self.update_cone_mode)
 
         # Initialize persistent variables
         self.cmd_vel = [0.0, 0.0, 0.0]
@@ -49,7 +51,13 @@ class KinematicController:
         self.desired_speed = 0.75 # m/s
 
 
-    def update_cone_state(self,msg):
+    def update_cone_mode(self,msg):
+        '''
+        Update Cone Mode
+        Description:
+            Function updates the cone mode when the state machine is waiting for
+            the next command.
+        '''
         if self.cone_status.mode == 0 and msg.mode == 1:
             self.path_end = False
             self.path_end_timer = rospy.get_time()
@@ -60,10 +68,12 @@ class KinematicController:
 
 
     def updatePath(self, msg):
-        # Update Desired Path
-        # Description:
-        #     Function updates the internal desired path for the robot.
-        #     If returning, reverses the direction of the path.
+        '''
+        Update Desired Path
+        Description:
+            Function updates the internal desired path for the robot.
+            If returning, reverses the direction of the path.
+        '''
         if self.cone_status.mode == 3:
             self.Waypoints.poses = msg.poses[::-1]
         else:
@@ -71,12 +81,14 @@ class KinematicController:
 
 
     def updateVels(self, msg):
-        # Update Command Velocities
-        # Description:
-        #     Function uses EKF state information and desired path to publish
-        #     command velocities using a kinematic controller. The nearest point
-        #     on the path is found and control and error velocities are
-        #     controlled to that section of the path.
+        '''
+        Update Command Velocities
+        Description:
+            Function uses EKF state information and desired path to publish
+            command velocities using a kinematic controller. The nearest point
+            on the path is found and control and error velocities are
+            controlled to that section of the path.
+        '''
 
         if len(self.Waypoints.poses) > 1:
             # Look for closest point and update global velocity goal
@@ -184,6 +196,12 @@ class KinematicController:
 
 
     def InverseKinematics(self,Vx,Vy,Vw):
+        '''
+        Inverse Kinematics Function
+        Description:
+            Function uses inverse kinematic function to find rotational 
+            velocities of each wheel given global velocities in x, y, omega 
+        '''
         output = [0.0, 0.0, 0.0]
         R = 0.1905
         output[0] = -Vx*math.sin(math.radians(150)) + Vy*math.cos(math.radians(150)) + Vw * R # Left
@@ -193,12 +211,14 @@ class KinematicController:
 
 
     def run(self):
-        # Kinematic Controller Publisher
-        # Description:
-        #     Function will continually publish control velocities regardless of
-        #     EKF callback rate based on latest update. Will stop the robot if
-        #     EKF topic is lost for more than 1 second. Publishes commands as
-        #     individual joint commands.
+        '''
+        Kinematic Controller Publisher
+        Description:
+            Function will continually publish control velocities regardless of
+            EKF callback rate based on latest update. Will stop the robot if
+            EKF topic is lost for more than 1 second. Publishes commands as
+            individual joint commands.
+        '''
 
         rate = rospy.Rate(10) # 10 Hz
 

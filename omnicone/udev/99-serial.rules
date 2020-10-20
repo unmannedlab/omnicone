@@ -1,3 +1,2 @@
-ACTION=="add", ATTRS{idVendor}=="26ac", ATTRS{idProduct}=="0011", ATTRS{serial}=="0", SYMLINK+="PixHawk"
 ACTION=="add", ATTRS{idVendor}=="20d2", ATTRS{idProduct}=="5740", ATTRS{serial}=="SDC2XXX", SYMLINK+="Roboteq%n"
 ACTION=="add", ATTRS{idVendor}=="1546", ATTRS{idProduct}=="01a9", SYMLINK+="ArduSimple"

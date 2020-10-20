@@ -10,8 +10,7 @@ from math import pi, cos, sin, sqrt
 
 # ROS Message Imports
 from std_msgs.msg       import Int32
-from geometry_msgs.msg  import Twist, Pose2D, Vector3
-from omnicone_msgs.msg  import ConeState
+from geometry_msgs.msg  import Twist, Pose2D
 from ubxtranslator.msg  import hpposllh, relpos2D
 
 class ConeEKF:
@@ -90,13 +89,15 @@ class ConeEKF:
 
 
     def update_hpposllh(self, msg):
-        # UBX publisher HPPosLLH Callback
-        # Description:
-        #     Function updates the internal latitude, longitude, and height for
-        #     use with the state calculation.
-        #     Additionally, updates the x and y components of the Observation
-        #     Covariance Matrix [R]. This value is estimated by the UBX F9P
-        #     module.
+        '''
+        UBX publisher HPPosLLH Callback
+        Description:
+            Function updates the internal latitude, longitude, and height for
+            use with the state calculation.
+            Additionally, updates the x and y components of the Observation
+            Covariance Matrix [R]. This value is estimated by the UBX F9P
+            module.
+        '''
         self.lon =      msg.llh.lon
         self.lat =      msg.llh.lat
         self.height =   msg.llh.height
@@ -106,11 +107,13 @@ class ConeEKF:
 
 
     def updateEnc_left(self, msg):
-        # Left Motor Encoder Callback
-        # Description
-        #     Function updates the internal memory of the left encoder counter.
-        #     If the variable has not been initialized, the first value is
-        #     assigned to both the previous and current encoder value.
+        '''
+        Left Motor Encoder Callback
+        Description:
+            Function updates the internal memory of the left encoder counter.
+            If the variable has not been initialized, the first value is
+            assigned to both the previous and current encoder value.
+        '''
         self.enc_curr[0] = msg.data
 
         # Initialize Encoder Value
@@ -120,11 +123,13 @@ class ConeEKF:
 
 
     def updateEnc_back(self, msg):
-        # Back Motor Encoder Callback
-        # Description
-        #     Function updates the internal memory of the back encoder counter.
-        #     If the variable has not been initialized, the first value is
-        #     assigned to both the previous and current encoder value.
+        '''
+        Back Motor Encoder Callback
+        Description:
+            Function updates the internal memory of the back encoder counter.
+            If the variable has not been initialized, the first value is
+            assigned to both the previous and current encoder value.
+        '''
         self.enc_curr[1] = msg.data
 
         # Initialize Encoder Value
@@ -134,14 +139,16 @@ class ConeEKF:
 
 
     def predict_step(self, msg):
-        # Right Motor Encoder Callback
-        # Description
-        #     Function updates the internal memory of the right encoder counter.
-        #     If the variable has not been initialized, the first value is
-        #     assigned to both the previous and current encoder value.
-        #     Additionally, function integrates the wheel rotations and uses the
-        #     omni base forward kinematics to estimate a change in position. This
-        #     estimation is used as the prediction step of the Kalman filter.
+        '''
+        Right Motor Encoder Callback
+        Description
+            Function updates the internal memory of the right encoder counter.
+            If the variable has not been initialized, the first value is
+            assigned to both the previous and current encoder value.
+            Additionally, function integrates the wheel rotations and uses the
+            omni base forward kinematics to estimate a change in position. This
+            estimation is used as the prediction step of the Kalman filter.
+        '''
 
         self.enc_curr[2] = msg.data
         # Initialize Encoder Value
@@ -198,12 +205,14 @@ class ConeEKF:
 
 
     def update_step(self, msg):
-        # UBX publisher HPPosLLH LLH Callback
-        # Description:
-        #     Function uses the ellipsoid model of Earth to calculate a 2D
-        #     position of the vehicle. This position, in conjunction with the
-        #     measurement of the vehicle heading is used in the update step in
-        #     the Kalman filter.
+        '''
+        UBX publisher HPPosLLH LLH Callback
+        Description:
+            Function uses the ellipsoid model of Earth to calculate a 2D
+            position of the vehicle. This position, in conjunction with the
+            measurement of the vehicle heading is used in the update step in
+            the Kalman filter.
+        '''
 
         pos_utm = utm.from_latlon(self.lat, self.lon)
 
@@ -232,13 +241,15 @@ class ConeEKF:
             
 
     def run(self):
-        # State Estimation Publisher
-        # Description:
-        #     Function transforms state estimate from Kalman filter into Twist
-        #     format and publishes at 10 hz. Is not dependent on callbacks.
-        #     The twist message components are redefined as Pose2D for
-        #     the linear component and Pose2D's derivative as the
-        #     angular component.
+        '''
+        State Estimation Publisher
+        Description:
+            Function transforms state estimate from Kalman filter into Twist
+            format and publishes at 10 hz. Is not dependent on callbacks.
+            The twist message components are redefined as Pose2D for
+            the linear component and Pose2D's derivative as the
+            angular component.
+        '''
 
         rate = rospy.Rate(10) # 10 Hz
         while(not rospy.is_shutdown()):

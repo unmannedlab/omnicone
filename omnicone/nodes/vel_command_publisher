@@ -7,16 +7,18 @@ from std_msgs.msg import Float64
 from geometry_msgs.msg import Pose2D
 
 from math import pi
-from open_base.srv import KinematicsInverse, KinematicsForward
+from open_base.srv import KinematicsInverse
 
 class VelCommander:
 
     def __init__(self):
-        # Velocity Commander Initialization
-        # Description:
-        #     Function initializes the velocity commander by creating the node,
-        #     subscribers, and publishers. Additionally, the parameters and
-        #     persistent variables are set/initialized to zero.
+        '''
+        Velocity Commander Initialization
+        Description:
+            Function initializes the velocity commander by creating the node,
+            subscribers, and publishers. Additionally, the parameters and
+            persistent variables are set/initialized to zero.
+        '''
 
         rospy.init_node('vel_command_publisher')
 
@@ -42,11 +44,13 @@ class VelCommander:
 
 
     def updateVels(self, goal):
-        # Goal Velocity Subscriber
-        # Description:
-        #     Function translates local velocity goal into individual motor
-        #     velocities using the inverse kinematics service from open_base.
-        #     These velocities are then published to each motor command topic.
+        '''
+        Goal Velocity Subscriber
+        Description:
+            Function translates local velocity goal into individual motor
+            velocities using the inverse kinematics service from open_base.
+            These velocities are then published to each motor command topic.
+        '''
 
         resp = self.ik_service_client(goal)
 
@@ -58,11 +62,13 @@ class VelCommander:
 
 
     def run(self):
-        # Velocity Command Publisher
-        # Description:
-        #     Publishes calculated goal motor velocities based on last given
-        #     local velocity goal. Publishes independent of updates unless
-        #     command timeout is reached.
+        '''
+        Velocity Command Publisher
+        Description:
+            Publishes calculated goal motor velocities based on last given
+            local velocity goal. Publishes independent of updates unless
+            command timeout is reached.
+        '''
 
         rate = rospy.Rate(10) # 10 Hz
 

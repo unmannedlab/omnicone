@@ -3,14 +3,11 @@
 import os
 import rospy
 import rospkg
-import math
-import open_base
 
-from geometry_msgs.msg import Twist, Pose2D, PoseStamped, Vector3
+from geometry_msgs.msg import PoseStamped, Vector3
 from nav_msgs.msg import Path
 
 import numpy as np
-from math import pi
 
 
 class WaypointPublisher:
@@ -19,13 +16,15 @@ class WaypointPublisher:
 
         rospy.init_node('WaypointPublisher')
 
+        # Persistent Variables
         self.home_init = False
         self.utm_home = (0, 0, 0)
 
+        # Publisher Subscriber
         self.home_sub = rospy.Subscriber('Cone_Command/home', Vector3, self.update_home)
         self.path_pub = rospy.Publisher('Waypoints', Path, latch=True, queue_size=1)
 
-        # filename = rospy.get_param('/WaypointFilePath')
+        # Load Path File
         self.LoadWaypoints(os.path.join('paths', rospy.get_param('~Path','UTM_1.csv')))
 
 

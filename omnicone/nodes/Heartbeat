@@ -11,25 +11,39 @@ class Heartbeat:
 
         rospy.init_node('Heartbeat')
 
+        # Cone Command Publishers
         self.kill_pub  = rospy.Publisher('Cone_Command/kill', Bool, queue_size=10)
         self.mode_pub  = rospy.Publisher('Cone_Command/mode', Int8, queue_size=10)
         self.home_pub  = rospy.Publisher('Cone_Command/home', Vector3, queue_size=10)
 
+        # GUI Subscribesr
         self.state_sub = rospy.Subscriber('/gui/kill', Bool, self.update_kill)
         self.state_sub = rospy.Subscriber('/gui/mode', Int8, self.update_mode)
 
+        # Persistent Variables
         self.cmd_kill = False
         self.cmd_mode = 0
 
+        # End of Vehicle set as home
         utm_home = utm.from_latlon(30.6341173, -96.4791011)
         self.home = Vector3(utm_home[0], utm_home[1], 0.0)
 
 
     def update_kill(self, msg):
+        '''
+        Update Kill Command
+        Description:
+            Updates kill message from GUI.
+        '''
         self.cmd_kill = msg
 
 
     def update_mode(self, msg):
+        '''
+        Update Kill Command
+        Description:
+            Updates mode message from GUI.
+        '''
         self.cmd_mode = msg
 
 
