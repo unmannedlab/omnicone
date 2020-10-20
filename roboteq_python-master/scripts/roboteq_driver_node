@@ -356,6 +356,9 @@ class Roboteq:
             self._supply_voltage_pub.publish(Float64(supply_voltage))
 
             rate.sleep()
+        
+        # Close serial port on ROS shutdown
+        self._ser.close()
 
 if __name__ == '__main__':
     rospy.init_node('roboteq', anonymous=True, disable_signals=True)
