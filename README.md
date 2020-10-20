@@ -9,7 +9,9 @@ A package containing the code for the automatic omnicone placement robots.
 
 ## Physical Setup 
 
-Setup the RTK base station tripod and, once stationary, plug in the RTK base station board. Corrections should be availalble in ~10 minutes or lesss. 
+Setup the RTK base station tripod and, once stationary, plug in the RTK base station board. Corrections should be availalble in ~10 minutes or less. 
+
+Ensure the 
 
 SSH into each cone in separate terminals using:
 
