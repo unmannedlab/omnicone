@@ -14,13 +14,13 @@ class OmniGui(QObject):
     def __init__(self):
         super(OmniGui, self).__init__()
 
-        rospy.init_node('gui_cmd', disable_signals=True)
+        rospy.init_node('ubx_gui', disable_signals=True)
         self.pub = rospy.Publisher('UBX/gui_cmd', Pose2D, queue_size=10)
 
         self.app = QtWidgets.QApplication(sys.argv)
 
         rospack = rospkg.RosPack()
-        self.window = uic.loadUi(rospack.get_path('omnicone') + '/resource/cmd_gui.ui')
+        self.window = uic.loadUi(rospack.get_path('omnicone') + '/resource/ubx_gui.ui')
 
         self.reset_program()
 
